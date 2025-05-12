@@ -1,62 +1,38 @@
 import Router from "koa-router";
 
-const controller = require("../controllers/usercontroller");
-const upload = require("../middleware/upload");
-const router = new Router({ prefix: "/users" });
-import userAuth from "../middleware/auth";
+const controller = require("../controllers/productcontroller");
+const router = new Router({ prefix: "/products" });
 
-//Gell All Users Data
+//Gell All Products Data
+
 /**
  * @swagger
- * /users:
- *   get:
- *     summary: Get all users
- *     tags: [Users]
- *     security: []
- *     responses:
- *       200:
- *         description: List of users
- */
-router.get("/", controller.getAllUser);
-
-//Get User Profile
-/**
- * @swagger
- * /users/getprofile:
+ * /products:
  *   post:
- *     summary: Get User Data
- *     tags: [Users]
- *     responses:
- *       200:
- *         description: User updated
- */
-router.post("/getprofile", userAuth, controller.getUserProfile);
-
-//Update User Profile
-/**
- * @swagger
- * /users/updateprofile:
- *   put:
- *     summary: Update an existing user
- *     tags: [Users]
+ *     summary: Get filtered products
+ *     tags: [Products]
  *     requestBody:
- *       required: true
+ *       required: false
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             required:
- *               - name
- *               - email
  *             properties:
- *               name:
- *                 type: string
- *               email:
- *                 type: string
+ *               filters:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     value:
+ *                       type: string
  *     responses:
  *       200:
- *         description: User updated
+ *         description: Filtered product list
  */
-router.put("/updateprofile", userAuth, controller.updateUserProfile);
+router.post("/", controller.getAllProduct);
+
+
 
 export default router;
