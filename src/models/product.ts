@@ -2,23 +2,33 @@
 import { Model, DataTypes } from "sequelize";
 import { sequelize } from "./index";
 import productAttribute from "./interface/ProductInterface";
-import { Category } from "./category";
-export const STOCK_STATUS = {
-  IN_STOCK: 1,
-  OUT_OF_STOCK: 0,
-};
+// import { ProductImage } from "./productimages";
 
 export class Product
   extends Model<productAttribute, never>
   implements productAttribute
 {
+  // id!: number;
+  // name!: string;
+  // description!: string;
+  // image!: string;
+  // price!: number;
+  // categoryId!: string;
+  // inStock!: number;
   id!: number;
   name!: string;
   description!: string;
   image!: string;
   price!: number;
-  categoryId!: number;
+  categoryId!: string;
   inStock!: number;
+  material!: string;
+  weight!: string;
+  size!: string;
+  attributes!: string;
+  features!: string;
+  discount!: string;
+  careInstructions!: string;
 }
 
 Product.init(
@@ -43,15 +53,42 @@ Product.init(
       type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: 0,
-
     },
     categoryId: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING,
     },
     inStock: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      defaultValue: STOCK_STATUS.IN_STOCK,
+      defaultValue: 0,
+    },
+    material: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    weight: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    size: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    attributes: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    features: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    discount: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    careInstructions: {
+      type: DataTypes.STRING,
+      allowNull: true,
     },
   },
   {
@@ -60,5 +97,6 @@ Product.init(
     modelName: "Product",
   }
 );
-
-Product.belongsTo(Category, { foreignKey: "categoryId" });
+// Product.hasMany(ProductImage, {
+//   foreignKey: "productId",
+// });

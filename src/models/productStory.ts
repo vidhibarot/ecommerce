@@ -1,7 +1,7 @@
 "use strict";
 import { Model, DataTypes } from "sequelize";
 import { sequelize } from "./index";
-import productStoryAttribute from "./interface/productstoryInterface";
+import productStoryAttribute from "./interface/ProductstoryInterface";
 import { Product } from "./product";
 export class ProductStory
   extends Model<productStoryAttribute, never>
@@ -11,6 +11,7 @@ export class ProductStory
   title!: string;
   description!: string;
   productId!: number;
+  image!: string;
 }
 
 ProductStory.init(
@@ -28,6 +29,9 @@ ProductStory.init(
     },
     productId: {
       type: DataTypes.INTEGER,
+    },
+    image: {
+      type: DataTypes.STRING,
     },
   },
   {

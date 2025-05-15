@@ -3,5 +3,6 @@ export default interface productStoryAttribute {
     title: string;
     description: string;
     productId: number;
+    image:string;
   }
   

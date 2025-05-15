@@ -12,6 +12,7 @@ interface userAttributes {
   roleId: number;
 }
 
+//Gell All Users Data
 const getAllUser = async (ctx: Context) => {
   try {
     const findUsers = await User.findAll();
@@ -32,6 +33,7 @@ const getAllUser = async (ctx: Context) => {
   }
 };
 
+//Get User Profile
 const getUserProfile = async (ctx: Context) => {
   try {
     const { id } = ctx.state.user;
@@ -84,6 +86,7 @@ const getUserProfile = async (ctx: Context) => {
   }
 };
 
+//Update User Profile
 const updateUserProfile = async (ctx: Context) => {
   try {
     const { id } = ctx.state.user;
@@ -130,6 +133,7 @@ const updateUserProfile = async (ctx: Context) => {
     ctx.body = { status: false, message: "Server Error" };
   }
 };
+
 export = {
   getAllUser,
   getUserProfile,
