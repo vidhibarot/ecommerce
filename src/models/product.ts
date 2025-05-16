@@ -1,20 +1,11 @@
-"use strict";
 import { Model, DataTypes } from "sequelize";
 import { sequelize } from "./index";
 import productAttribute from "./interface/ProductInterface";
-// import { ProductImage } from "./productimages";
 
 export class Product
-  extends Model<productAttribute, never>
+  extends Model<productAttribute>
   implements productAttribute
 {
-  // id!: number;
-  // name!: string;
-  // description!: string;
-  // image!: string;
-  // price!: number;
-  // categoryId!: string;
-  // inStock!: number;
   id!: number;
   name!: string;
   description!: string;
@@ -29,6 +20,14 @@ export class Product
   features!: string;
   discount!: string;
   careInstructions!: string;
+
+  static associate(db: any) {
+    Product.hasMany(db.ProductImage, { foreignKey: "productId" });
+    Product.hasMany(db.ProductBenefit, { foreignKey: "productId" });
+    Product.hasMany(db.ProductUse, { foreignKey: "productId" });
+    Product.hasMany(db.ProductStory, { foreignKey: "productId" });
+
+  }
 }
 
 Product.init(
@@ -92,11 +91,10 @@ Product.init(
     },
   },
   {
-    sequelize: sequelize,
+    sequelize,
     tableName: "Product",
     modelName: "Product",
   }
 );
-// Product.hasMany(ProductImage, {
-//   foreignKey: "productId",
-// });
+
+export default Product;
