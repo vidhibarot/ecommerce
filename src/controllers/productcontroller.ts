@@ -7,6 +7,7 @@ import { ProductBenefit } from "../models/productBenefits";
 import { ProductUse } from "../models/productUse";
 import { ProductStory } from "../models/productStory";
 import { ProductImage } from "../models/productimages";
+import { SubCategory } from "../models/subCategory";
 interface ProductFilterRequest {
   filters?: FilterField[];
 }
@@ -78,119 +79,59 @@ interface FilterField {
 // };
 const getAllProduct = async (ctx: Context) => {
   try {
-    const bodyData = ctx?.request?.body as ProductFilterRequest;
-
-    const productWhere: any = {};
-    let filterCategoryIds: number[] = [];
-    let allMatchingCategories: Category[] = [];
-
-    // Step 1: Handle filters
-    if ((bodyData.filters ?? []).length > 0) {
-      for (const filter of bodyData.filters!) {
-        if (filter.id && filter.value !== "") {
-          if (filter.id === "price") {
-            productWhere["price"] = { [Op.lt]: filter.value };
-          } else if (
-            filter.id === "category.name" &&
-            typeof filter.value === "string"
-          ) {
-            // Fetch matching categories by name
-            allMatchingCategories = await Category.findAll({
-              where: {
-                name: { [Op.like]: `%${filter.value.trim()}%` },
-              },
-              attributes: { exclude: ["createdAt", "updatedAt"] },
-            });
-
-            filterCategoryIds = allMatchingCategories.map((cat) => cat.id);
-          } else {
-            productWhere[filter.id] = {
-              [Op.like]: `%${String(filter.value).trim()}%`,
-            };
-          }
-        }
-      }
-    }
-
-    // Step 2: Fetch products matching filters (except category filtering for now)
-    let products = await Product.findAll({
-      where: productWhere,
-      attributes: {
-        exclude: ["createdAt", "updatedAt"],
-      },
-            include: [
-              {
-                model: ProductImage,
-              },
-            ],
-      
+    const products = await Product.findAll({
+      attributes: [
+        "id",
+        "name",
+        "description",
+        "image",
+        "price",
+        "categoryId",
+        "discount",
+      ],
     });
 
-    // Step 3: Manually filter products by categoryId if filter applied
-    // if (filterCategoryIds.length > 0) {
-    //   products = products.filter((product: any) => {
-    //     // Parse string to array safely
-    //     let categoryIdsArray: number[] = [];
-    //     try {
-    //       categoryIdsArray = JSON.parse(product.categoryId);
-    //     } catch {
-    //       categoryIdsArray = [];
-    //     }
+    const enrichedProducts = await Promise.all(
+      products.map(async (product) => {
+        let categoryIds: number[] = [];
 
-    //     return categoryIdsArray.some((id) => filterCategoryIds.includes(id));
-    //   });
-    // }
+        try {
+          categoryIds = Array.isArray(product.categoryId)
+            ? product.categoryId
+            : JSON.parse(product.categoryId || "[]");
+        } catch (e) {
+          categoryIds = [];
+        }
 
-    // // Step 4: Get all category IDs used by products
-    // const allCategoryIdsInProducts = new Set<number>();
-    // for (const product of products) {
-    //   try {
-    //     const catIds: number[] = JSON.parse(product.categoryId);
-    //     catIds.forEach((id) => allCategoryIdsInProducts.add(id));
-    //   } catch {
-    //     // ignore parse errors
-    //   }
-    // }
+        const categories = await Category.findAll({
+          where: {
+            id: {
+              [Op.in]: categoryIds,
+            },
+          },
+          attributes: { exclude: ["createdAt", "updatedAt"] },
+        });
 
-    // // Step 5: Fetch category details for all these IDs
-    // const categoryList = await Category.findAll({
-    //   where: { id: Array.from(allCategoryIdsInProducts) },
-    //   attributes: { exclude: ["createdAt", "updatedAt"] },
-    // });
+        const originalPrice = product.price;
+        const discountPercentage: any = product.discount || 0;
+        const discountPrice =
+          originalPrice - (originalPrice * discountPercentage) / 100;
+        return {
+          ...product.toJSON(),
+          categories,
+          discountPrice, // ✅ added here
+        };
+      })
+    );
 
-    // // Step 6: Create map for quick lookup
-    // const categoryMap = new Map<number, any>();
-    // for (const cat of categoryList) {
-    //   categoryMap.set(cat.id, cat);
-    // }
-
-    // Step 7: Attach category data to each product
-    // const enrichedProducts = products.map((product: any) => {
-    //   let categoryIdsArray: number[] = [];
-    //   try {
-    //     categoryIdsArray = JSON.parse(product.categoryId);
-    //   } catch {
-    //     categoryIdsArray = [];
-    //   }
-
-    //   return {
-    //     ...product.toJSON(),
-    //     categories: categoryIdsArray
-    //       .map((id) => categoryMap.get(id))
-    //       .filter(Boolean),
-    //   };
-    // });
-
-    // Step 8: Send response
     ctx.status = 200;
     ctx.body = {
       status: true,
       message: "Filtered products fetched",
-      data: products,
-      // count: enrichedProducts.length,
+      data: enrichedProducts,
     };
   } catch (error) {
-    console.error("err -> ", error);
+    console.error("getAllProduct error -> ", error);
     ctx.status = 400;
     ctx.body = {
       status: false,
@@ -220,7 +161,7 @@ const addProductData = async (ctx: Context) => {
       price: body?.price,
       image: imageUrl,
       inStock: body?.inStock,
-      attributes:body?.attributes
+      attributes: body?.attributes,
     };
     const addProductData: any = await Product.create(data);
     console.log("adproductdattatata...", addProductData, data?.story);
