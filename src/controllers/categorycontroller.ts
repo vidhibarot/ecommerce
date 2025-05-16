@@ -24,7 +24,7 @@ const addCategoryData = async (ctx: Context) => {
     const existingCategory = await Category.findOne({ where: { name } });
 
     if (existingCategory) {
-      ctx.status = 409; // Conflict
+      ctx.status = 409; 
       ctx.body = {
         status: false,
         message: "Category already exists",

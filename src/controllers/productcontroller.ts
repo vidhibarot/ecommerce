@@ -7,76 +7,13 @@ import { ProductBenefit } from "../models/productBenefits";
 import { ProductUse } from "../models/productUse";
 import { ProductStory } from "../models/productStory";
 import { ProductImage } from "../models/productimages";
-import { SubCategory } from "../models/subCategory";
-interface ProductFilterRequest {
-  filters?: FilterField[];
-}
 
 interface FilterField {
-  id: string;
+  id?: string;
   value: string | number;
 }
 
-//Gell All Products Data
-// const getAllProduct = async (ctx: Context) => {
-//   try {
-//     const bodyData = ctx?.request?.body as ProductFilterRequest;
-
-//     const productWhere: any = {};
-//     const categoryWhere: any = {};
-
-//     if ((bodyData.filters ?? []).length > 0) {
-//       for (const filter of bodyData.filters!) {
-//         if (filter.id && filter.value !== "") {
-//           if (filter.id === "price") {
-//             productWhere["price"] = { [Op.lt]: filter.value };
-//           } else if (
-//             filter.id === "category.name" &&
-//             typeof filter.value === "string"
-//           ) {
-//             categoryWhere["name"] = { [Op.like]: `%${filter.value.trim()}%` };
-//           } else {
-//             productWhere[filter.id] = {
-//               [Op.like]: `%${String(filter.value).trim()}%`,
-//             };
-//           }
-//         }
-//       }
-//     }
-//     const findProducts = await Product.findAll({
-//       where: productWhere,
-//       attributes: {
-//         exclude: ["createdAt", "updatedAt"],
-//       },
-
-//       include: [
-//         {
-//           model: Category,
-//           where:
-//             Object.keys(categoryWhere).length > 0 ? categoryWhere : undefined,
-//           attributes: {
-//             exclude: ["createdAt", "updatedAt"],
-//           },
-//         },
-//       ],
-//     });
-
-//     ctx.status = 200;
-//     ctx.body = {
-//       status: true,
-//       message: "Filtered products fetched",
-//       data: findProducts,
-//       count: findProducts.length,
-//     };
-//   } catch (error) {
-//     console.error("err -> ", error);
-//     ctx.status = 400;
-//     ctx.body = {
-//       status: false,
-//       message: error instanceof Error ? error.message : "Unknown Error",
-//     };
-//   }
-// };
+//Get All Products Data
 const getAllProduct = async (ctx: Context) => {
   try {
     const products = await Product.findAll({
@@ -140,7 +77,7 @@ const getAllProduct = async (ctx: Context) => {
   }
 };
 
-//const Add Products Data
+//Add Products Data
 const addProductData = async (ctx: Context) => {
   try {
     const { body, files } = ctx.req as any;
@@ -162,25 +99,59 @@ const addProductData = async (ctx: Context) => {
       image: imageUrl,
       inStock: body?.inStock,
       attributes: body?.attributes,
+      categoryId: body?.categoryId,
+      material: body?.material,
+      weight: body?.weight,
+      size: body?.size,
+      features: body.features,
+      discount: body?.discount,
+      careInstructions: body?.careInstruction,
     };
     const addProductData: any = await Product.create(data);
     console.log("adproductdattatata...", addProductData, data?.story);
-    if (files?.productImages) {
-      const productImageUrls = files?.productImages.map((img: any) =>
-        createLiveImageURL(img, "multiple")
-      );
-      console.log("prpduct.....", productImageUrls);
+
+    if (files?.productImages && Array.isArray(files.productImages)) {
+      for (const img of files.productImages) {
+        const imgUrl = createLiveImageURL(img, "multiple");
+        await ProductImage.create({
+          productId: addProductData?.id,
+          image: imgUrl,
+        });
+      }
     }
 
     if (body?.story) {
-      console.log("data?.storyyy", typeof body?.story);
+      const data = JSON.parse(body?.story);
+      console.log("data?.storyyy", data);
+      await ProductStory.create({
+        title: data.title,
+        description: data.description,
+        productId: addProductData?.id,
+        image: data.image,
+      });
     }
 
     if (body?.benefits) {
       console.log("data?.benefits", typeof body?.benefits);
+            const data = JSON.parse(body?.benefits);
+      console.log("data?.storyyy", data);
+      await ProductBenefit.create({
+        title: data.title,
+        description: data.description,
+        productId: addProductData?.id,
+      });
+
     }
     if (body?.use) {
       console.log("data?.data?.use", typeof body?.use);
+                  const data = JSON.parse(body?.benefits);
+      console.log("data?.storyyy", data);
+      await ProductUse.create({
+        title: data.title,
+        description: data.description,
+        productId: addProductData?.id,
+      });
+
     }
 
     ctx.status = 200;
@@ -199,124 +170,7 @@ const addProductData = async (ctx: Context) => {
   }
 };
 
-// const getProductById = async (ctx: Context) => {
-//   try {
-//     const productId = ctx.params.id;
-
-//     // Fetch product
-//     const product = await Product.findOne({
-//       where: { id: productId },
-//       attributes: {
-//         exclude: ["createdAt", "updatedAt"],
-//       },
-//     });
-
-//     if (!product) {
-//       ctx.status = 404;
-//       ctx.body = {
-//         status: false,
-//         message: "Product not found",
-//       };
-//       return;
-//     }
-//     const categoryIds = Array.isArray(product.categoryId)
-//       ? product.categoryId
-//       : JSON.parse(product.categoryId || "[]");
-//     console.log("categoryidvvvv", typeof categoryIds);
-//     const [story, benefits, uses, images, categories] = await Promise.all([
-//       ProductStory.findAll({
-//         where: { productId },
-//         attributes: { exclude: ["createdAt", "updatedAt"] },
-//       }),
-//       ProductBenefit.findAll({
-//         where: { productId },
-//         attributes: { exclude: ["createdAt", "updatedAt"] },
-//       }),
-//       ProductUse.findAll({
-//         where: { productId },
-//         attributes: { exclude: ["createdAt", "updatedAt"] },
-//       }),
-//       ProductImage.findAll({
-//         where: { productId },
-//         attributes: ["image"],
-//       }),
-//       Category.findAll({
-//         where: {
-//           id: {
-//             [Op.in]: categoryIds,
-//           },
-//         },
-//         attributes: { exclude: ["createdAt", "updatedAt"] },
-//       }),
-//     ]);
-
-//     // Calculate discount price
-//     const discountPercentage: any = product?.discount || 0;
-//     const originalPrice = product.price;
-//     const discountPrice =
-//       originalPrice - (originalPrice * discountPercentage) / 100;
-
-//     // // Fetch categories
-//     // const categoryIds = product.categoryId || [];
-//     // const categories = await Category.findAll({
-//     //   where: {
-//     //     id: {
-//     //       [Op.in]: categoryIds,
-//     //     },
-//     //   },
-//     //   attributes: {
-//     //     exclude: ["createdAt", "updatedAt"],
-//     //   },
-//     // });
-
-//     // // Fetch product images
-//     // const images = await ProductImage.findAll({
-//     //   where: {
-//     //     productId: product.id,
-//     //   },
-//     //   attributes: ["image"],
-//     // });
-
-//     // const productImages = images.map((img) => img.image);
-
-//     // Return the full response
-
-//     ctx.status = 200;
-//     ctx.body = {
-//       status: true,
-//       message: "Product fetched successfully",
-//       data: {
-//         product,
-//         images,
-//         categories,
-//         discountPrice,
-//         story,
-//         benefits,
-//         uses,
-//         // id: product.id,
-//         // name: product.name,
-//         // description: product.description,
-//         // originalPrice,
-//         // discount: discountPercentage,
-//         // discountPrice,
-//         // inStock: product.inStock,
-//         // story: product.story,
-//         // benefits: product.benefits,
-//         // use: product.use,
-//         // categories,
-//         // productImages,
-//         // descriptionArray
-//       },
-//     };
-//   } catch (error) {
-//     console.error("getProductById error -> ", error);
-//     ctx.status = 500;
-//     ctx.body = {
-//       status: false,
-//       message: error instanceof Error ? error.message : "Unknown error",
-//     };
-//   }
-// };
+//Get Product Data By Id
 const getProductById = async (ctx: Context) => {
   try {
     const productId = ctx.params.id;
