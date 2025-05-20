@@ -43,6 +43,8 @@ const router = new Router({ prefix: "/auth" });
  *                 type: string
  *               confirmPassword:
  *                 type: string
+ *               adminPassword:
+ *                 type: string
  *     responses:
  *       200:
  *         description: User registered

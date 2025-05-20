@@ -7,6 +7,7 @@ import { ProductBenefit } from "../models/productBenefits";
 import { ProductUse } from "../models/productUse";
 import { ProductStory } from "../models/productStory";
 import { ProductImage } from "../models/productimages";
+import SubCategory from "../models/subCategory";
 
 interface FilterField {
   id?: string;
@@ -22,6 +23,7 @@ const getAllProduct = async (ctx: Context) => {
         "name",
         "description",
         "image",
+        "inStock",
         "price",
         "categoryId",
         "discount",
@@ -46,6 +48,13 @@ const getAllProduct = async (ctx: Context) => {
               [Op.in]: categoryIds,
             },
           },
+          include: [
+            {
+              model: SubCategory,
+              attributes: ["id", "name", "categoryId"],
+            },
+          ],
+
           attributes: { exclude: ["createdAt", "updatedAt"] },
         });
 
@@ -133,25 +142,23 @@ const addProductData = async (ctx: Context) => {
 
     if (body?.benefits) {
       console.log("data?.benefits", typeof body?.benefits);
-            const data = JSON.parse(body?.benefits);
+      const data = JSON.parse(body?.benefits);
       console.log("data?.storyyy", data);
       await ProductBenefit.create({
         title: data.title,
         description: data.description,
         productId: addProductData?.id,
       });
-
     }
     if (body?.use) {
       console.log("data?.data?.use", typeof body?.use);
-                  const data = JSON.parse(body?.benefits);
+      const data = JSON.parse(body?.benefits);
       console.log("data?.storyyy", data);
       await ProductUse.create({
         title: data.title,
         description: data.description,
         productId: addProductData?.id,
       });
-
     }
 
     ctx.status = 200;
@@ -220,6 +227,13 @@ const getProductById = async (ctx: Context) => {
           [Op.in]: categoryIds,
         },
       },
+      include: [
+        {
+          model: SubCategory,
+          attributes: ["id", "name", "categoryId"],
+        },
+      ],
+
       attributes: { exclude: ["createdAt", "updatedAt"] },
     });
 

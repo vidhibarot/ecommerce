@@ -5,6 +5,7 @@ import { Role } from "../models/role";
 import dotenv from "dotenv";
 import { Context } from "koa";
 import { Op } from "sequelize";
+import { ROLE_TYPES_ID } from "../config/constant";
 
 dotenv.config();
 
@@ -15,13 +16,14 @@ interface userAttributes {
   password: string;
   confirmPassword: string;
   roleId: number;
+  adminPassword?: string;
 }
 
 //Register User
 const register = async (ctx: Context) => {
   try {
-    const { name, email, password, roleId, confirmPassword } = ctx.request
-      .body as userAttributes;
+    let { name, email, password, roleId, confirmPassword, adminPassword } = ctx
+      .request.body as userAttributes;
 
     const existingUser = await User.findOne({ where: { email }, raw: true });
 
@@ -34,6 +36,17 @@ const register = async (ctx: Context) => {
       ctx.status = 400;
       ctx.body = { status: false, message: "Passwords do not match" };
       return;
+    }
+    if (adminPassword) {
+      if (adminPassword === process.env.ADMIN_SECRET) {
+        roleId = ROLE_TYPES_ID.ADMIN; 
+      } else {
+        ctx.status = 403;
+        ctx.body = { status: false, message: "Please enter valid Admin Password" };
+        return;
+      }
+    } else {
+      roleId = ROLE_TYPES_ID.USER;
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
