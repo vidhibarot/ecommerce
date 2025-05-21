@@ -39,7 +39,7 @@ ProductUse.init(
   {
     sequelize,
     tableName: "ProductUses",
-    modelName: "ProductUse", 
+    modelName: "ProductUse",
   }
 );
 

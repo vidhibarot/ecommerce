@@ -32,6 +32,7 @@ const router = new Router({ prefix: "/category" });
  */
 router.post("/add", controller.addCategoryData);
 
+//Update Category Data
 /**
  * @swagger
  * /category/update/{id}:

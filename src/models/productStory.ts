@@ -43,7 +43,7 @@ ProductStory.init(
   {
     sequelize,
     tableName: "ProductStories",
-    modelName: "ProductStory", 
+    modelName: "ProductStory",
   }
 );
 

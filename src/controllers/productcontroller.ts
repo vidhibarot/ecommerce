@@ -17,6 +17,33 @@ interface FilterField {
 //Get All Products Data
 const getAllProduct = async (ctx: Context) => {
   try {
+    let { page, limit, price, searchvalue } = ctx.params;
+
+    const currentPage = parseInt(page);
+    const itemsPerPage = parseInt(limit);
+
+    // Calculate offset
+    const offset = (currentPage - 1) * itemsPerPage;
+
+    const filterQuery: any = {};
+
+    const parsedPrice = Number(price);
+    if (price && !isNaN(parsedPrice)) {
+      filterQuery.price = { [Op.lte]: parsedPrice };
+    }
+    const rawSearchValue = searchvalue?.trim?.() || "";
+
+    const invalidSearchValues = ["", "undefined", "null", "{searchvalue}"];
+
+    if (!invalidSearchValues.includes(rawSearchValue)) {
+      filterQuery[Op.or] = [
+        { name: { [Op.like]: `%${rawSearchValue}%` } },
+        { description: { [Op.like]: `%${rawSearchValue}%` } },
+      ];
+    }
+
+
+    console.log("Final filter query:", filterQuery);
     const products = await Product.findAll({
       attributes: [
         "id",
@@ -28,6 +55,11 @@ const getAllProduct = async (ctx: Context) => {
         "categoryId",
         "discount",
       ],
+      where: Object.keys(filterQuery).length > 0 ? filterQuery : undefined,
+
+      offset: offset,
+      limit: itemsPerPage,
+      order: [["id", "asc"]], // Optional: Add sorting
     });
 
     const enrichedProducts = await Promise.all(
@@ -93,9 +125,6 @@ const addProductData = async (ctx: Context) => {
     let imageUrl;
     console.log("bodyyyyy", body);
     console.log("files,,mmm", files);
-    if (body?.careInstruction) {
-      console.log("f...........................", files);
-    }
 
     if (files?.image) {
       imageUrl = createLiveImageURL(files?.image, "single");
@@ -173,6 +202,141 @@ const addProductData = async (ctx: Context) => {
     ctx.body = {
       status: false,
       message: error instanceof Error ? error.message : "Unknown Error",
+    };
+  }
+};
+
+// Update Product by ID
+const updateProduct = async (ctx: Context) => {
+  try {
+    const id = ctx.params.id;
+    const { body, files } = ctx.req as any;
+
+    const product = await Product.findByPk(id);
+    if (!product) {
+      ctx.status = 404;
+      ctx.body = {
+        status: false,
+        message: "Product not found",
+      };
+      return;
+    }
+
+    let imageUrl = product.image;
+    if (files?.image) {
+      imageUrl = createLiveImageURL(files.image, "single");
+    }
+
+    const updateData: any = {
+      name: body?.name,
+      description: body?.description,
+      price: body?.price,
+      image: imageUrl,
+      inStock: body?.inStock,
+      attributes: body?.attributes,
+      categoryId: body?.categoryId,
+      material: body?.material,
+      weight: body?.weight,
+      size: body?.size,
+      features: body?.features,
+      discount: body?.discount,
+      careInstructions: body?.careInstruction,
+    };
+
+    await Product.update(updateData, { where: { id } });
+
+    if (body?.story) {
+      const data = JSON.parse(body?.story);
+      console.log("data?.storyyy", data);
+      await ProductStory.destroy({ where: { productId: id } });
+
+      await ProductStory.create({
+        title: data.title,
+        description: data.description,
+        productId: id,
+        image: data.image,
+      });
+    }
+
+    if (body?.benefits) {
+      console.log("data?.benefits", typeof body?.benefits);
+      const data = JSON.parse(body?.benefits);
+      console.log("data?.storyyy", data);
+      await ProductBenefit.destroy({ where: { productId: id } });
+
+      await ProductBenefit.create({
+        title: data.title,
+        description: data.description,
+        productId: id,
+      });
+    }
+    if (body?.use) {
+      console.log("data?.data?.use", typeof body?.use);
+      const data = JSON.parse(body?.benefits);
+      console.log("data?.storyyy", data);
+      await ProductUse.destroy({ where: { productId: id } });
+
+      await ProductUse.create({
+        title: data.title,
+        description: data.description,
+        productId: id,
+      });
+    }
+    if (files?.productImages && Array.isArray(files.productImages)) {
+      await ProductImage.destroy({ where: { productId: id } });
+      for (const img of files.productImages) {
+        const imgUrl = createLiveImageURL(img, "multiple");
+        await ProductImage.create({ productId: id, image: imgUrl });
+      }
+    }
+
+    ctx.status = 200;
+    ctx.body = {
+      status: true,
+      message: "Product updated successfully",
+    };
+  } catch (error) {
+    console.error("updateProduct error ->", error);
+    ctx.status = 500;
+    ctx.body = {
+      status: false,
+      message: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+};
+
+// Delete Product by ID
+const deleteProduct = async (ctx: Context) => {
+  try {
+    const id = ctx.params.id;
+
+    const product = await Product.findByPk(id);
+    if (!product) {
+      ctx.status = 404;
+      ctx.body = {
+        status: false,
+        message: "Product not found",
+      };
+      return;
+    }
+
+    await Product.destroy({ where: { id } });
+    await ProductImage.destroy({ where: { productId: id } });
+    await ProductBenefit.destroy({ where: { productId: id } });
+    await ProductUse.destroy({ where: { productId: id } });
+    await ProductStory.destroy({ where: { productId: id } });
+
+    ctx.status = 200;
+    ctx.body = {
+      status: true,
+      message: "Product deleted successfully",
+    };
+  } catch (error) {
+    console.error("deleteProduct error ->", error);
+    ctx.status = 500;
+    ctx.body = {
+      status: false,
+      message: error instanceof Error ? error.message : "Unknown error",
     };
   }
 };
@@ -271,4 +435,6 @@ export = {
   getAllProduct,
   addProductData,
   getProductById,
+  updateProduct,
+  deleteProduct,
 };

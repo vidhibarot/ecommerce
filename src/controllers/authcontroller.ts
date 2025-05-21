@@ -39,10 +39,13 @@ const register = async (ctx: Context) => {
     }
     if (adminPassword) {
       if (adminPassword === process.env.ADMIN_SECRET) {
-        roleId = ROLE_TYPES_ID.ADMIN; 
+        roleId = ROLE_TYPES_ID.ADMIN;
       } else {
         ctx.status = 403;
-        ctx.body = { status: false, message: "Please enter valid Admin Password" };
+        ctx.body = {
+          status: false,
+          message: "Please enter valid Admin Password",
+        };
         return;
       }
     } else {
