@@ -34,6 +34,7 @@ const router = new Router({ prefix: "/auth" });
  *               - email
  *               - password
  *               - confirmPassword
+ *               - phoneno
  *             properties:
  *               name:
  *                 type: string
@@ -42,6 +43,8 @@ const router = new Router({ prefix: "/auth" });
  *               password:
  *                 type: string
  *               confirmPassword:
+ *                 type: string
+ *               phoneno:
  *                 type: string
  *               adminPassword:
  *                 type: string

@@ -15,6 +15,7 @@ export class User
   email!: string;
   password!: string;
   roleId!: number;
+  phoneno!: string;
 }
 
 User.init(
@@ -31,6 +32,9 @@ User.init(
       type: DataTypes.STRING,
     },
     password: {
+      type: DataTypes.STRING,
+    },
+    phoneno: {
       type: DataTypes.STRING,
     },
     roleId: {

@@ -3,5 +3,6 @@ export default interface userAttributes {
   name: string;
   email: string;
   password: string;
+  phoneno:string;
   roleId: number;
 }

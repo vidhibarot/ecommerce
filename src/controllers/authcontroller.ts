@@ -14,6 +14,7 @@ interface userAttributes {
   name: string;
   email: string;
   password: string;
+  phoneno:string;
   confirmPassword: string;
   roleId: number;
   adminPassword?: string;
@@ -22,7 +23,7 @@ interface userAttributes {
 //Register User
 const register = async (ctx: Context) => {
   try {
-    let { name, email, password, roleId, confirmPassword, adminPassword } = ctx
+    let { name, email, password, phoneno ,roleId, confirmPassword, adminPassword } = ctx
       .request.body as userAttributes;
 
     const existingUser = await User.findOne({ where: { email }, raw: true });
@@ -58,6 +59,7 @@ const register = async (ctx: Context) => {
       name,
       email,
       roleId,
+      phoneno,
       password: hashedPassword,
     };
 
