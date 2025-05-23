@@ -1,4 +1,4 @@
 export default interface roleAttributes {
-  id: number;
+  id?: number;
   name: string;
 }
