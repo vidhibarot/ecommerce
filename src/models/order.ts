@@ -16,15 +16,16 @@ export class Orders extends Model<orderAttribute> implements orderAttribute {
   customerName!: string;
   email!: string;
   phoneno!: string;
+  address!: string;
   quantity!: number;
   price!: number;
   deliveryCharges!: number;
   totalAmount!: number;
   status!: string;
   static associate(db: any) {
-    Orders.belongsTo(db.User, { foreignKey: "userId" });
     Orders.belongsTo(db.Product, { foreignKey: "productId" });
     Orders.hasMany(db.Transaction, { foreignKey: "orderId" });
+    // Orders.belongsTo(db.User, { foreignKey: "userId" });
   }
 }
 
@@ -48,6 +49,9 @@ Orders.init(
       type: DataTypes.STRING,
     },
     phoneno: {
+      type: DataTypes.STRING,
+    },
+    address: {
       type: DataTypes.STRING,
     },
     quantity: {

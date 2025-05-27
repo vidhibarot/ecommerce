@@ -1,4 +1,5 @@
 import Router from "koa-router";
+import { validateAddProduct, validateUpdateProduct } from "../validator/productValidator";
 
 const controller = require("../controllers/productcontroller");
 const router = new Router({ prefix: "/products" });
@@ -122,7 +123,7 @@ router.get("/:page/:limit/:price/:searchvalue", controller.getAllProduct);
  *         description: Product added successfully
  */
 router.post(
-  "/add",
+  "/add", validateAddProduct,
   upload.fields([{ name: "image" }, { name: "productImages" }]),
   controller.addProductData
 );
@@ -215,7 +216,7 @@ router.post(
  *         description: Product added successfully
  */
 router.put(
-  "/update/:id",
+  "/update/:id", validateUpdateProduct,
   upload.fields([{ name: "image" }, { name: "productImages" }]),
   controller.updateProduct
 );
@@ -233,7 +234,7 @@ router.put(
  *         name: id
  *         required: true
  *         schema:
- *           type: string
+ *           type: integer
  *         description: Product ID
  *     responses:
  *       200:

@@ -56,15 +56,20 @@ export const STATUS = {
   DEFAULT: 1,
   NOT_DEFAULT: 0,
   TRUE: true,
-  FALSE: false
+  FALSE: false,
 } as const;
 
 export const ROLE_TYPES = {
   ADMIN: "Admin",
-  USER: "User"
+  USER: "User",
 } as const;
 
 export const ROLE_TYPES_ID = {
   ADMIN: 1,
-  USER: 2
+  USER: 2,
+} as const;
+
+export const STATUSDATA = {
+  ACTIVE: "Active",
+  INACTIVE: "Inactive",
 } as const;

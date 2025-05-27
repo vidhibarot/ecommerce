@@ -1,6 +1,6 @@
 export default interface deliveryChargesAttribute {
   id?: number;
-  cityId: number;
+  city: string;
   zipcode: string;
   minOrder: string;
   charge: string;

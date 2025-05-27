@@ -16,11 +16,19 @@ module.exports = {
                     customerName: "John Doe",
                     email: "john@example.com",
                     phoneno: "1234567890",
+                    address: JSON.stringify({
+                        type: "home",
+                        address: "addreslines",
+                        country: "123 Main St",
+                        city: "New York",
+                        state: "Xyz",
+                        zipcode: "10001"
+                    }),
                     quantity: 2,
                     price: 500,
                     deliveryCharges: 50,
                     totalAmount: 1000,
-                    status: "pending",
+                    status: "Inprogress",
                     createdAt: new Date(),
                     updatedAt: new Date()
                 },
@@ -31,11 +39,19 @@ module.exports = {
                     customerName: "John Doe",
                     email: "john@example.com",
                     phoneno: "1234567890",
+                    address: JSON.stringify({
+                        type: "home",
+                        address: "addreslines",
+                        country: "123 Main St",
+                        city: "New York",
+                        state: "Xyz",
+                        zipcode: "10001"
+                    }),
                     quantity: 2,
                     price: 500,
                     deliveryCharges: 50,
                     totalAmount: 1000,
-                    status: "pending",
+                    status: "Inprogress",
                     createdAt: new Date(),
                     updatedAt: new Date()
                 }

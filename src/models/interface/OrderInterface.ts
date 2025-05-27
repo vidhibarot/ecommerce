@@ -5,9 +5,10 @@ export default interface orderAttribute {
   customerName: string;
   email: string;
   phoneno: string;
+  address: string;
   quantity: number;
   price: number;
   deliveryCharges: number;
   totalAmount: number;
-  status: string;
+  status?: string;
 }

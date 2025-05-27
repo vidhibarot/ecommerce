@@ -1,6 +1,7 @@
 import Router from "koa-router";
 const controller = require("../controllers/categorycontroller");
 const router = new Router({ prefix: "/category" });
+import { validateAddCategory,validateUpdateCategory } from "../validator/categoryValidator";
 
 //Add Category Data
 /**
@@ -30,7 +31,7 @@ const router = new Router({ prefix: "/category" });
  *       200:
  *         description: User updated
  */
-router.post("/add", controller.addCategoryData);
+router.post("/add", validateAddCategory,controller.addCategoryData);
 
 //Update Category Data
 /**
@@ -67,7 +68,7 @@ router.post("/add", controller.addCategoryData);
  *       200:
  *         description: Category updated successfully
  */
-router.put("/update/:id", controller.updateCategoryData);
+router.put("/update/:id", validateUpdateCategory,controller.updateCategoryData);
 
 // Delete Category Data
 /**

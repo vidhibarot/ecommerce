@@ -42,8 +42,6 @@ const getAllProduct = async (ctx: Context) => {
       ];
     }
 
-
-    console.log("Final filter query:", filterQuery);
     const products = await Product.findAll({
       attributes: [
         "id",
@@ -97,7 +95,7 @@ const getAllProduct = async (ctx: Context) => {
         return {
           ...product.toJSON(),
           categories,
-          discountPrice, // ✅ added here
+          discountPrice, 
         };
       })
     );
@@ -123,13 +121,10 @@ const addProductData = async (ctx: Context) => {
   try {
     const { body, files } = ctx.req as any;
     let imageUrl;
-    console.log("bodyyyyy", body);
-    console.log("files,,mmm", files);
 
     if (files?.image) {
       imageUrl = createLiveImageURL(files?.image, "single");
     }
-    console.log("imageurllll", imageUrl);
     const data: any = {
       name: body?.name,
       description: body?.description,
@@ -146,7 +141,6 @@ const addProductData = async (ctx: Context) => {
       careInstructions: body?.careInstruction,
     };
     const addProductData: any = await Product.create(data);
-    console.log("adproductdattatata...", addProductData, data?.story);
 
     if (files?.productImages && Array.isArray(files.productImages)) {
       for (const img of files.productImages) {
@@ -160,7 +154,6 @@ const addProductData = async (ctx: Context) => {
 
     if (body?.story) {
       const data = JSON.parse(body?.story);
-      console.log("data?.storyyy", data);
       await ProductStory.create({
         title: data.title,
         description: data.description,
@@ -170,9 +163,7 @@ const addProductData = async (ctx: Context) => {
     }
 
     if (body?.benefits) {
-      console.log("data?.benefits", typeof body?.benefits);
       const data = JSON.parse(body?.benefits);
-      console.log("data?.storyyy", data);
       await ProductBenefit.create({
         title: data.title,
         description: data.description,
@@ -180,9 +171,7 @@ const addProductData = async (ctx: Context) => {
       });
     }
     if (body?.use) {
-      console.log("data?.data?.use", typeof body?.use);
       const data = JSON.parse(body?.benefits);
-      console.log("data?.storyyy", data);
       await ProductUse.create({
         title: data.title,
         description: data.description,
@@ -247,7 +236,6 @@ const updateProduct = async (ctx: Context) => {
 
     if (body?.story) {
       const data = JSON.parse(body?.story);
-      console.log("data?.storyyy", data);
       await ProductStory.destroy({ where: { productId: id } });
 
       await ProductStory.create({
@@ -259,9 +247,7 @@ const updateProduct = async (ctx: Context) => {
     }
 
     if (body?.benefits) {
-      console.log("data?.benefits", typeof body?.benefits);
       const data = JSON.parse(body?.benefits);
-      console.log("data?.storyyy", data);
       await ProductBenefit.destroy({ where: { productId: id } });
 
       await ProductBenefit.create({
@@ -271,9 +257,7 @@ const updateProduct = async (ctx: Context) => {
       });
     }
     if (body?.use) {
-      console.log("data?.data?.use", typeof body?.use);
       const data = JSON.parse(body?.benefits);
-      console.log("data?.storyyy", data);
       await ProductUse.destroy({ where: { productId: id } });
 
       await ProductUse.create({
@@ -320,11 +304,12 @@ const deleteProduct = async (ctx: Context) => {
       return;
     }
 
-    await Product.destroy({ where: { id } });
     await ProductImage.destroy({ where: { productId: id } });
     await ProductBenefit.destroy({ where: { productId: id } });
     await ProductUse.destroy({ where: { productId: id } });
     await ProductStory.destroy({ where: { productId: id } });
+      await Product.destroy({ where: { id } });
+
 
     ctx.status = 200;
     ctx.body = {
