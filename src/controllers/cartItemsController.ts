@@ -38,6 +38,89 @@ const addCartItems = async (ctx: Context) => {
   }
 };
 
+// Update CartItems Data
+const updateCartItems = async (ctx: Context) => {
+  try {
+    const { quantity } = ctx.request.body as Partial<cartItemsAttribute>;
+
+    const cartItem = await CartItems.findOne({
+      where: {
+        id: ctx?.params?.cartId,
+        userId:ctx?.state?.user?.id,
+      },
+    });
+
+    if (!cartItem) {
+      ctx.status = 404;
+      ctx.body = {
+        status: false,
+        message: "Cart item not found or does not belong to this user",
+      };
+      return;
+    }
+
+    cartItem.quantity = quantity || cartItem.quantity;
+    await cartItem.save();
+
+    ctx.status = 200;
+    ctx.body = {
+      status: true,
+      message: "Cart item updated successfully",
+      data: cartItem,
+    };
+  } catch (error) {
+    console.error("Error updating cart item:", error);
+    ctx.status = 500;
+    ctx.body = {
+      status: false,
+      message: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+};
+
+
+// Delete CartItems Data
+const deleteCartItems = async (ctx: Context) => {
+  try {
+    const cartId=ctx.params.cartId
+    const cartItem = await CartItems.findOne({
+      where: {
+        id: cartId,
+        userId:ctx?.state?.user?.id,
+      },
+    });
+
+    if (!cartItem) {
+      ctx.status = 404;
+      ctx.body = {
+        status: false,
+        message: "Cart item not found or does not belong to this user",
+      };
+      return;
+    }
+
+    await cartItem.destroy();
+
+    ctx.status = 200;
+    ctx.body = {
+      status: true,
+      message: "Cart item deleted successfully",
+    };
+  } catch (error) {
+    console.error("Error deleting cart item:", error);
+    ctx.status = 500;
+    ctx.body = {
+      status: false,
+      message: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+};
+
+
+
+
 export = {
   addCartItems,
+  updateCartItems,
+  deleteCartItems
 };

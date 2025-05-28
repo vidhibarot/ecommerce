@@ -7,6 +7,7 @@ export class Product
   implements productAttribute
 {
   id!: number;
+  userId!: number;
   name!: string;
   description!: string;
   image!: string;
@@ -37,6 +38,9 @@ Product.init(
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,
+    },
+    userId: {
+      type: DataTypes.INTEGER,
     },
     name: {
       type: DataTypes.STRING,

@@ -1,5 +1,6 @@
 export default interface productAttribute {
     id?: number;
+    userId:number;
     name: string;
     description: string;
     image: string;

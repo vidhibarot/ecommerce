@@ -126,6 +126,7 @@ const addProductData = async (ctx: Context) => {
       imageUrl = createLiveImageURL(files?.image, "single");
     }
     const data: any = {
+      userId:ctx?.state?.user?.id,
       name: body?.name,
       description: body?.description,
       price: body?.price,
@@ -151,6 +152,7 @@ const addProductData = async (ctx: Context) => {
         });
       }
     }
+console.log("bodyyyy..",body?.story,body?.benefits,body?.use)
 
     if (body?.story) {
       const data = JSON.parse(body?.story);
@@ -217,6 +219,7 @@ const updateProduct = async (ctx: Context) => {
     }
 
     const updateData: any = {
+      userId:ctx?.state?.user?.id,
       name: body?.name,
       description: body?.description,
       price: body?.price,
@@ -233,7 +236,6 @@ const updateProduct = async (ctx: Context) => {
     };
 
     await Product.update(updateData, { where: { id } });
-
     if (body?.story) {
       const data = JSON.parse(body?.story);
       await ProductStory.destroy({ where: { productId: id } });
