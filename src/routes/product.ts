@@ -123,7 +123,7 @@ router.get("/:page/:limit/:price/:searchvalue", controller.getAllProduct);
  *         description: Product added successfully
  */
 router.post(
-  "/add", validateAddProduct,
+  "/add",
   upload.fields([{ name: "image" }, { name: "productImages" }]),
   controller.addProductData
 );
@@ -216,7 +216,7 @@ router.post(
  *         description: Product added successfully
  */
 router.put(
-  "/update/:id", validateUpdateProduct,
+  "/update/:id",
   upload.fields([{ name: "image" }, { name: "productImages" }]),
   controller.updateProduct
 );

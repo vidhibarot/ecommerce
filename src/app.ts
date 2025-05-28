@@ -10,6 +10,7 @@ import countryRoutes from "./routes/country";
 import stateRoutes from "./routes/state";
 import cityRoutes from "./routes/city";
 import orderRoutes from "./routes/order";
+import cartItemsRoutes from "./routes/cartItems"
 import { db } from './models/index';
 import swaggerJSDoc from 'swagger-jsdoc';
 import path from 'path';
@@ -61,6 +62,8 @@ app.use(countryRoutes.routes()).use(countryRoutes.allowedMethods());
 app.use(cityRoutes.routes()).use(cityRoutes.allowedMethods());
 app.use(stateRoutes.routes()).use(stateRoutes.allowedMethods());
 app.use(orderRoutes.routes()).use(orderRoutes.allowedMethods());
+app.use(cartItemsRoutes.routes()).use(cartItemsRoutes.allowedMethods());
+
 
 
 const PORT = process.env.PORT || 5000;

@@ -25,7 +25,6 @@ export class Orders extends Model<orderAttribute> implements orderAttribute {
   static associate(db: any) {
     Orders.belongsTo(db.Product, { foreignKey: "productId" });
     Orders.hasMany(db.Transaction, { foreignKey: "orderId" });
-    // Orders.belongsTo(db.User, { foreignKey: "userId" });
   }
 }
 

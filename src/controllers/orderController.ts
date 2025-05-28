@@ -4,6 +4,8 @@ import Transaction from "../models/transaction";
 import Product from "../models/product";
 import DeliveryCharges from "../models/deliverycharges";
 import { STATUSDATA } from "../config/constant";
+import { count } from "console";
+import User from "../models/user";
 interface orderAttributes {
   id?: number;
   userId: number;
@@ -19,6 +21,12 @@ interface orderAttributes {
   status?: string;
 }
 
+const status = {
+  INPROGRESS: "Inprogress",
+  SHIPPED: "Shipped",
+  DELIVERD: "Delivered",
+  CANCELLED: "Cancelled",
+};
 //Add Order Data
 const addOrder = async (ctx: Context) => {
   try {
@@ -107,11 +115,47 @@ const getAllOrder = async (ctx: Context) => {
       ],
     });
 
+    const statusCounts = findOrderData.reduce(
+      (acc, order) => {
+        const orderStatus = order.status;
+        if (orderStatus === status.INPROGRESS) acc.inprogress++;
+        if (orderStatus === status.SHIPPED) acc.shipped++;
+        if (orderStatus === status.DELIVERD) acc.delivered++;
+        if (orderStatus === status.CANCELLED) acc.cancelled++;
+        acc.total++;
+        return acc;
+      },
+      {
+        total: 0,
+        inprogress: 0,
+        shipped: 0,
+        delivered: 0,
+        cancelled: 0,
+      }
+    );
+    const userIds = [...new Set(findOrderData.map((order) => order.userId))];
+
+    const users = await User.findAll({
+      where: { id: userIds },
+    });
+
+    const userMap:any = users.reduce((acc:any, user) => {
+      acc[user.id] = user;
+      return acc;
+    }, {});
+
+    const ordersWithUser = findOrderData.map((order) => ({
+      ...order.toJSON(),
+      user: userMap[order.userId] || null,
+    }));
+
     ctx.status = 200;
     ctx.body = {
       status: true,
       message: "All Order Fetched",
-      data: findOrderData,
+      data: ordersWithUser,
+      count: statusCounts,
+      totalOrders: findOrderData.length,
     };
   } catch (error) {
     console.error("err -> ", error);
