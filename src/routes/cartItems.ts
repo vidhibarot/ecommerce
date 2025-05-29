@@ -84,7 +84,18 @@ router.put("/update/:cartId", userAuth,controller.updateCartItems);
  */
 router.delete("/delete/:cartId", userAuth, controller.deleteCartItems);
 
-
-
+//Get CartItems Data
+/**
+ * @swagger
+ * /cart/get:
+ *   get:
+ *     summary: get a cart item for the logged-in user
+ *     tags: [Cart]
+ *     description: get a cart item for the logged-in user
+ *     responses:
+ *       200:
+ *         description: Item fetched successfully
+ */
+router.get("/get", userAuth, controller.getCartItems);
 
 export default router;

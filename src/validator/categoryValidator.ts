@@ -3,6 +3,7 @@ import Joi from "joi";
 export const validateAddCategory = async (ctx: any, next: any) => {
   const schema = Joi.object({
     name: Joi.string().required(),
+    subcategory: Joi.array().items(Joi.string()).optional()
   });
 
   try {
@@ -21,6 +22,7 @@ export const validateAddCategory = async (ctx: any, next: any) => {
 export const validateUpdateCategory = async (ctx: any, next: any) => {
   const schema = Joi.object({
     name: Joi.string().required(),
+    subcategory: Joi.array().items(Joi.string()).optional()
   });
 
   try {

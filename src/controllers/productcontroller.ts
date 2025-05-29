@@ -19,6 +19,8 @@ const getAllProduct = async (ctx: Context) => {
   try {
     let { page, limit, price, searchvalue } = ctx.params;
 
+    console.log("pagegggg",page,limit,price,searchvalue)
+
     const currentPage = parseInt(page);
     const itemsPerPage = parseInt(limit);
 

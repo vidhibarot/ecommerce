@@ -46,7 +46,7 @@ const updateCartItems = async (ctx: Context) => {
     const cartItem = await CartItems.findOne({
       where: {
         id: ctx?.params?.cartId,
-        userId:ctx?.state?.user?.id,
+        userId: ctx?.state?.user?.id,
       },
     });
 
@@ -78,15 +78,14 @@ const updateCartItems = async (ctx: Context) => {
   }
 };
 
-
 // Delete CartItems Data
 const deleteCartItems = async (ctx: Context) => {
   try {
-    const cartId=ctx.params.cartId
+    const cartId = ctx.params.cartId;
     const cartItem = await CartItems.findOne({
       where: {
         id: cartId,
-        userId:ctx?.state?.user?.id,
+        userId: ctx?.state?.user?.id,
       },
     });
 
@@ -116,11 +115,43 @@ const deleteCartItems = async (ctx: Context) => {
   }
 };
 
+//Get CartItems Data
+const getCartItems = async (ctx: Context) => {
+  try {
+    const cartItem = await CartItems.findAll({
+      where: {
+        userId: ctx?.state?.user?.id,
+      },
+    });
 
+    if (cartItem.length == 0) {
+      ctx.status = 404;
+      ctx.body = {
+        status: false,
+        message: "Cart item not found or does not belong to this user",
+      };
+      return;
+    }
 
+    ctx.status = 200;
+    ctx.body = {
+      status: true,
+      message: "Cart items fetched successfully",
+      data: cartItem,
+    };
+  } catch (error) {
+    console.error("Error get cart item:", error);
+    ctx.status = 500;
+    ctx.body = {
+      status: false,
+      message: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+};
 
 export = {
   addCartItems,
   updateCartItems,
-  deleteCartItems
+  deleteCartItems,
+  getCartItems,
 };

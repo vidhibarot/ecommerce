@@ -1,4 +1,3 @@
-
 import Joi from "joi";
 
 export const validateRegister = async (ctx: any, next: any) => {
@@ -6,10 +5,14 @@ export const validateRegister = async (ctx: any, next: any) => {
     name: Joi.string().required(),
     email: Joi.string().email().required(),
     password: Joi.string().min(6).required(),
-    confirmPassword: Joi.string().valid(Joi.ref("password")).required().messages({
-      "any.only": "Passwords do not match",
-    }),
-    phoneno: Joi.string().required()
+    confirmPassword: Joi.string()
+      .valid(Joi.ref("password"))
+      .required()
+      .messages({
+        "any.only": "Passwords do not match",
+      }),
+    phoneno: Joi.string().required(),
+    adminPassword: Joi.string().optional(),
   });
 
   try {

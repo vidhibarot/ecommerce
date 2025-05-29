@@ -1,21 +1,3 @@
-// import { Segments, Joi, celebrate } from "celebrate";
-
-// export default {
-//   createOrder: () =>
-//     celebrate({
-//       [Segments.BODY]: Joi.object().keys({
-//         userId: Joi.number().required(),
-//         productId: Joi.number().required(),
-//         customerName: Joi.string().required(),
-//         email: Joi.string().required(),
-//         phoneno: Joi.string().required(),
-//         address: Joi.string().required(),
-//         quantity: Joi.number().required(),
-//         price: Joi.number().required(),
-//       }),
-//     }),
-// };
-// src/validator/orderValidator.ts
 import Joi from "joi";
 
 export const validateCreateOrder = async (ctx: any, next: any) => {
