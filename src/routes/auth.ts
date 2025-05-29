@@ -1,4 +1,5 @@
 import Router from "koa-router";
+import { validateLogin, validateRegister, validateUpdateUser } from "../validator/authValidator";
 const {
   register,
   login,
@@ -34,6 +35,7 @@ const router = new Router({ prefix: "/auth" });
  *               - email
  *               - password
  *               - confirmPassword
+ *               - phoneno
  *             properties:
  *               name:
  *                 type: string
@@ -43,11 +45,15 @@ const router = new Router({ prefix: "/auth" });
  *                 type: string
  *               confirmPassword:
  *                 type: string
+ *               phoneno:
+ *                 type: string
+ *               adminPassword:
+ *                 type: string
  *     responses:
  *       200:
  *         description: User registered
  */
-router.post("/register", register);
+router.post("/register",validateRegister, register);
 
 //User Login
 /**
@@ -75,7 +81,7 @@ router.post("/register", register);
  *       200:
  *         description: Logged in successfully
  */
-router.post("/login", login);
+router.post("/login", validateLogin, login);
 
 //Forgot Password
 /**
@@ -135,7 +141,7 @@ router.post("/forgotpassword", forgotPassword);
  *       200:
  *         description: User updated
  */
-router.put("/update/:id", updateUserById);
+router.put("/update/:id",validateUpdateUser, updateUserById);
 
 //Get User By Id
 /**

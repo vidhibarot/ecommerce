@@ -5,6 +5,7 @@ import { Role } from "../models/role";
 import dotenv from "dotenv";
 import { Context } from "koa";
 import { Op } from "sequelize";
+import { ROLE_TYPES_ID } from "../config/constant";
 
 dotenv.config();
 
@@ -13,15 +14,17 @@ interface userAttributes {
   name: string;
   email: string;
   password: string;
+  phoneno:string;
   confirmPassword: string;
   roleId: number;
+  adminPassword?: string;
 }
 
 //Register User
 const register = async (ctx: Context) => {
   try {
-    const { name, email, password, roleId, confirmPassword } = ctx.request
-      .body as userAttributes;
+    let { name, email, password, phoneno ,roleId, confirmPassword, adminPassword } = ctx
+      .request.body as userAttributes;
 
     const existingUser = await User.findOne({ where: { email }, raw: true });
 
@@ -35,6 +38,20 @@ const register = async (ctx: Context) => {
       ctx.body = { status: false, message: "Passwords do not match" };
       return;
     }
+    if (adminPassword) {
+      if (adminPassword === process.env.ADMIN_SECRET) {
+        roleId = ROLE_TYPES_ID.ADMIN;
+      } else {
+        ctx.status = 403;
+        ctx.body = {
+          status: false,
+          message: "Please enter valid Admin Password",
+        };
+        return;
+      }
+    } else {
+      roleId = ROLE_TYPES_ID.USER;
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -42,6 +59,7 @@ const register = async (ctx: Context) => {
       name,
       email,
       roleId,
+      phoneno,
       password: hashedPassword,
     };
 
@@ -190,7 +208,6 @@ const updateUserById = async (ctx: Context) => {
     };
 
     const [updated] = await User.update(updateObject, { where: { id } });
-    console.log("updateddddddd......", updated);
     if (updated) {
       ctx.status = 200;
       ctx.body = { status: true, message: "User Updated Successfully" };

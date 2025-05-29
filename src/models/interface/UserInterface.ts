@@ -1,7 +1,8 @@
 export default interface userAttributes {
-  id: number;
+  id?: number;
   name: string;
   email: string;
   password: string;
+  phoneno:string;
   roleId: number;
 }
