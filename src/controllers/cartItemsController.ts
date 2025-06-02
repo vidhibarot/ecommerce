@@ -1,5 +1,6 @@
 import { Context } from "koa";
 import CartItems from "../models/cartItems";
+import Product from "../models/product";
 
 interface cartItemsAttribute {
   id?: number;
@@ -122,6 +123,11 @@ const getCartItems = async (ctx: Context) => {
       where: {
         userId: ctx?.state?.user?.id,
       },
+      include: [
+        {
+          model: Product,
+        },
+      ],
     });
 
     if (cartItem.length == 0) {
@@ -149,9 +155,34 @@ const getCartItems = async (ctx: Context) => {
   }
 };
 
+// Delete User CartItems Data
+const deleteUserCartItems = async (ctx: Context) => {
+  try {
+    await CartItems.destroy({
+      where: {
+        userId: ctx?.state?.user?.id,
+      },
+    });
+
+    ctx.status = 200;
+    ctx.body = {
+      status: true,
+      message: "Cart items deleted successfully",
+    };
+  } catch (error) {
+    console.error("Error deleting cart items:", error);
+    ctx.status = 500;
+    ctx.body = {
+      status: false,
+      message: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+};
+
 export = {
   addCartItems,
   updateCartItems,
   deleteCartItems,
   getCartItems,
+  deleteUserCartItems,
 };

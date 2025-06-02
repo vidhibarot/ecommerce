@@ -98,4 +98,19 @@ router.delete("/delete/:cartId", userAuth, controller.deleteCartItems);
  */
 router.get("/get", userAuth, controller.getCartItems);
 
+//Delete User Cart Items Data
+/**
+ * @swagger
+ * /cart/userCart/delete:
+ *   delete:
+ *     summary: Delete a cart item for the logged-in user
+ *     tags: [Cart]
+ *     description: ID of the cart to delete from cart data
+ *     responses:
+ *       200:
+ *         description: Item deleted successfully
+ */
+router.delete("/userCart/delete", userAuth, controller.deleteUserCartItems);
+
+
 export default router;

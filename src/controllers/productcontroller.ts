@@ -109,7 +109,7 @@ const getAllProduct = async (ctx: Context) => {
       data: enrichedProducts,
     };
   } catch (error) {
-    console.error("getAllProduct error -> ", error);
+    console.error("getAllProduct error -> ", error); 
     ctx.status = 400;
     ctx.body = {
       status: false,
