@@ -61,6 +61,7 @@ const addUserPreferenceData = async (ctx: Context) => {
   }
 };
 
+//Update UserPreference Data
 const updateUserPreferenceData = async (ctx: Context) => {
   try {
     const userId = ctx?.state?.user?.id;
@@ -120,7 +121,55 @@ const updateUserPreferenceData = async (ctx: Context) => {
   }
 };
 
+// Get UserPreference Data by Logged-in User
+const getUserPreferenceData = async (ctx: Context) => {
+  try {
+    const userId = ctx?.state?.user?.id;
+
+    if (!userId) {
+      ctx.status = 401;
+      ctx.body = {
+        status: false,
+        message: "Unauthorized: User not found in token",
+      };
+      return;
+    }
+
+    const preference = await UserPreference.findOne({ where: { userId } });
+
+    console.log("preferencepreference",preference)
+
+    if (!preference) {
+      ctx.status = 404;
+      ctx.body = {
+        status: false,
+        message: "User preference not found",
+      };
+      return;
+    }
+
+    ctx.status = 200;
+    ctx.body = {
+      status: true,
+      message: "User preference fetched successfully",
+      data: {
+        userId: preference.userId,
+        address: JSON.parse(preference.address || "[]"),
+      },
+    };
+  } catch (error) {
+    console.error("Get User Preference Error: ", error);
+    ctx.status = 500;
+    ctx.body = {
+      status: false,
+      message: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+};
+
+
 export = {
   addUserPreferenceData,
   updateUserPreferenceData,
+  getUserPreferenceData
 };

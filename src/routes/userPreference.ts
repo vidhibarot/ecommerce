@@ -85,4 +85,19 @@ router.post("/add",userAuth,controller.addUserPreferenceData);
  */
 router.put("/update",userAuth,controller.updateUserPreferenceData);
 
+// Get UserPreference Data by Logged-in User
+
+/**
+ * @swagger
+ * /userpreference/get:
+ *   get:
+ *     summary: Get user preference data for the logged-in user
+ *     tags: [userpreference]
+ *     responses:
+ *       200:
+ *         description: User preference data retrieved successfully
+ */
+router.get("/get", userAuth, controller.getUserPreferenceData);
+
+
 export default router;

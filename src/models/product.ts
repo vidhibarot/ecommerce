@@ -91,7 +91,7 @@ Product.init(
       allowNull: true,
     },
     careInstructions: {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT,
       allowNull: true,
     },
   },

@@ -26,7 +26,7 @@ UserPreference.init(
       type: DataTypes.INTEGER,
     },
     address: {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT,
     },
   },
   {
