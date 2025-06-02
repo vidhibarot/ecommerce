@@ -73,3 +73,19 @@ export const STATUSDATA = {
   ACTIVE: "Active",
   INACTIVE: "Inactive",
 } as const;
+
+export const ORDERSTATUS = {
+  INPROGRESS: "Inprogress",
+  SHIPPED: "Shipped",
+  DELIVERD: "Delivered",
+  FAILED: "Failed",
+  CANCELLED: "Cancelled",
+  REFUNDED: "Refunded",
+} as const;
+
+export const PAYMEMENTSTATUS = {
+  INPROGRESS: "Inprogress",
+  SUCCESS: "Success",
+  FAILED: "Failed",
+  REFUNDED: "Refunded",
+} as const;

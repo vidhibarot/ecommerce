@@ -121,6 +121,64 @@ const updateUserPreferenceData = async (ctx: Context) => {
   }
 };
 
+//Delete UserPreference Data
+const deleteUserAddress = async (ctx: Context) => {
+  try {
+    const userId = ctx?.state?.user?.id;
+    const { address_id } = ctx.request.body as any;
+
+    if (!userId || !address_id) {
+      ctx.status = 400;
+      ctx.body = {
+        status: false,
+        message: "userId and address_id are required",
+      };
+      return;
+    }
+
+    const existing = await UserPreference.findOne({ where: { userId } });
+
+    if (!existing) {
+      ctx.status = 404;
+      ctx.body = { status: false, message: "User preference not found" };
+      return;
+    }
+
+    let addressArray = existing.address ? JSON.parse(existing.address) : [];
+
+    const filteredAddresses = addressArray.filter(
+      (addr: any) => addr.address_id !== address_id
+    );
+
+    if (filteredAddresses.length === addressArray.length) {
+      ctx.status = 404;
+      ctx.body = {
+        status: false,
+        message: "Address not found for the given address_id",
+      };
+      return;
+    }
+
+    await UserPreference.update(
+      { address: JSON.stringify(filteredAddresses) },
+      { where: { userId } }
+    );
+
+    ctx.status = 200;
+    ctx.body = {
+      status: true,
+      message: "Address deleted successfully",
+    };
+  } catch (error) {
+    console.error("Delete Address Error: ", error);
+    ctx.status = 500;
+    ctx.body = {
+      status: false,
+      message: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+};
+
 // Get UserPreference Data by Logged-in User
 const getUserPreferenceData = async (ctx: Context) => {
   try {
@@ -171,5 +229,6 @@ const getUserPreferenceData = async (ctx: Context) => {
 export = {
   addUserPreferenceData,
   updateUserPreferenceData,
+  deleteUserAddress,
   getUserPreferenceData
 };

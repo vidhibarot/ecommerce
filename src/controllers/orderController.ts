@@ -4,8 +4,10 @@ import Transaction from "../models/transaction";
 import Product from "../models/product";
 import DeliveryCharges from "../models/deliverycharges";
 import { STATUSDATA } from "../config/constant";
-import { count } from "console";
 import User from "../models/user";
+import { ORDERSTATUS, PAYMEMENTSTATUS } from "../config/constant";
+const Razorpay = require('razorpay');
+
 interface orderAttributes {
   id?: number;
   userId: number;
@@ -27,6 +29,13 @@ const status = {
   DELIVERD: "Delivered",
   CANCELLED: "Cancelled",
 };
+
+// Initialize Razorpay instance
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_ID_KEY!,
+  key_secret: process.env.RAZORPAY_SECRET!,
+});
+
 //Add Order Data
 const addOrder = async (ctx: Context) => {
   try {
@@ -139,7 +148,7 @@ const getAllOrder = async (ctx: Context) => {
       where: { id: userIds },
     });
 
-    const userMap:any = users.reduce((acc:any, user) => {
+    const userMap: any = users.reduce((acc: any, user) => {
       acc[user.id] = user;
       return acc;
     }, {});
@@ -167,7 +176,79 @@ const getAllOrder = async (ctx: Context) => {
   }
 };
 
+//Order Payment
+const orderPayment = async (ctx: Context) => {
+  try {
+    const { orderId, paymentId, amount, paymentMethod } = ctx.request.body as any;
+
+    const status = paymentId ? PAYMEMENTSTATUS.SUCCESS : PAYMEMENTSTATUS.FAILED;
+
+    // Create a new transaction
+    await Transaction.create({
+      orderId: orderId,
+      paymentId: paymentId || null,
+      paymentMethod: paymentMethod || "Razorpay",
+      transationId: Date.now().toString(),
+      status,
+      amount,
+    });
+
+    const updatedOrderStatus = paymentId
+      ? ORDERSTATUS.INPROGRESS
+      : ORDERSTATUS.FAILED;
+
+    await Orders.update(
+      { status: updatedOrderStatus },
+      { where: { id: orderId } }
+    );
+
+    ctx.status = 200;
+    ctx.body = {
+      status: true,
+      message: paymentId
+        ? "Payment successful. Order status updated to Inprogress."
+        : "Payment failed. Order status updated to Failed.",
+    };
+  } catch (error: any) {
+    ctx.status = 500;
+    ctx.body = {
+      status: false,
+      message: error.message || "Internal Server Error",
+    };
+  }
+};
+
+//Payment Refund
+const refundPayment = async (ctx: Context) => {
+  const { paymentId } = ctx.request.body as any;
+
+  if (!paymentId) {
+    ctx.status = 400;
+    ctx.body = { message: 'paymentId is required' };
+    return;
+  }
+
+  try {
+    const refund = await razorpay.payments.refund(paymentId);
+    ctx.status = 200;
+    ctx.body = {
+      message: 'Refund processed successfully',
+      refund,
+    };
+  } catch (err:any) {
+    console.error('Refund Error:', err);
+    ctx.status = 500;
+    ctx.body = {
+      message: 'Refund failed',
+      error: err.message,
+    };
+  }
+};
+
+
 export = {
   getAllOrder,
   addOrder,
+  orderPayment,
+  refundPayment,
 };

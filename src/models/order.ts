@@ -2,11 +2,14 @@ import { Model, DataTypes } from "sequelize";
 import { sequelize } from "./index";
 import orderAttribute from "./interface/OrderInterface";
 
+
 export enum status {
   INPROGRESS = "Inprogress",
   SHIPPED = "Shipped",
   DELIVERD = "Delivered",
+  FAILED="Failed",
   CANCELLED = "Cancelled",
+  REFUNDED="Refunded"
 }
 
 export class Orders extends Model<orderAttribute> implements orderAttribute {

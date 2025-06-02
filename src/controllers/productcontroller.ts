@@ -19,7 +19,7 @@ const getAllProduct = async (ctx: Context) => {
   try {
     let { page, limit, price, searchvalue } = ctx.params;
 
-    console.log("pagegggg",page,limit,price,searchvalue)
+    console.log("pagegggg", page, limit, price, searchvalue);
 
     const currentPage = parseInt(page);
     const itemsPerPage = parseInt(limit);
@@ -97,7 +97,7 @@ const getAllProduct = async (ctx: Context) => {
         return {
           ...product.toJSON(),
           categories,
-          discountPrice, 
+          discountPrice,
         };
       })
     );
@@ -109,7 +109,7 @@ const getAllProduct = async (ctx: Context) => {
       data: enrichedProducts,
     };
   } catch (error) {
-    console.error("getAllProduct error -> ", error); 
+    console.error("getAllProduct error -> ", error);
     ctx.status = 400;
     ctx.body = {
       status: false,
@@ -128,7 +128,7 @@ const addProductData = async (ctx: Context) => {
       imageUrl = createLiveImageURL(files?.image, "single");
     }
     const data: any = {
-      userId:ctx?.state?.user?.id,
+      userId: ctx?.state?.user?.id,
       name: body?.name,
       description: body?.description,
       price: body?.price,
@@ -154,7 +154,8 @@ const addProductData = async (ctx: Context) => {
         });
       }
     }
-console.log("bodyyyy..",body?.story,body?.benefits,body?.use)
+    
+    console.log("bodyyyy..", body?.story, body?.benefits, body?.use);
 
     if (body?.story) {
       const data = JSON.parse(body?.story);
@@ -221,7 +222,7 @@ const updateProduct = async (ctx: Context) => {
     }
 
     const updateData: any = {
-      userId:ctx?.state?.user?.id,
+      userId: ctx?.state?.user?.id,
       name: body?.name,
       description: body?.description,
       price: body?.price,
@@ -312,8 +313,7 @@ const deleteProduct = async (ctx: Context) => {
     await ProductBenefit.destroy({ where: { productId: id } });
     await ProductUse.destroy({ where: { productId: id } });
     await ProductStory.destroy({ where: { productId: id } });
-      await Product.destroy({ where: { id } });
-
+    await Product.destroy({ where: { id } });
 
     ctx.status = 200;
     ctx.body = {

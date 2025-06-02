@@ -6,12 +6,13 @@ export enum status {
   INPROGRESS = "Inprogress",
   SUCCESS = "Success",
   FAILED = "Failed",
-  REFUNDABLE = "Refundable",
+  REFUNDED = "Refunded",
 }
 
 export class Transaction extends Model<transactionAttribute> implements transactionAttribute {
   id!: number;
   orderId!: number;
+  amount!:string;
   transationId!: string;
   paymentId!: string;
   paymentMethod!: string;
@@ -31,6 +32,9 @@ Transaction.init(
     },
     orderId: {
       type: DataTypes.INTEGER,
+    },
+    amount: {
+      type: DataTypes.STRING,
     },
     transationId: {
       type: DataTypes.STRING,

@@ -85,8 +85,34 @@ router.post("/add",userAuth,controller.addUserPreferenceData);
  */
 router.put("/update",userAuth,controller.updateUserPreferenceData);
 
-// Get UserPreference Data by Logged-in User
+// Delete UserPreference Address
+/**
+ * @swagger
+ * /userpreference/delete:
+ *   delete:
+ *     summary: Delete a specific address from user preferences
+ *     tags: [userpreference]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               address_id:
+ *                 type: string
+ *                 description: The ID of the address to delete
+ *             required:
+ *               - address_id
+ *     responses:
+ *       200:
+ *         description: Address deleted successfully
+ *       404:
+ *         description: Address not found
+ */
+router.delete("/delete", userAuth, controller.deleteUserAddress);
 
+// Get UserPreference Data by Logged-in User
 /**
  * @swagger
  * /userpreference/get:
