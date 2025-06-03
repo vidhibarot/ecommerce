@@ -1,5 +1,5 @@
 export default interface productImagesAttribute {
-    id: number;
+    id?: number;
     productId: number;
     image: string;
 }

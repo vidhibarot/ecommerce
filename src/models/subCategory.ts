@@ -1,15 +1,18 @@
-"use strict";
 import { Model, DataTypes } from "sequelize";
 import { sequelize } from "./index";
 import subCategoryAttribute from "./interface/SubcategoryInterface";
-import { Category } from "./category";
+
 export class SubCategory
-  extends Model<subCategoryAttribute, never>
+  extends Model<subCategoryAttribute>
   implements subCategoryAttribute
 {
   id!: number;
   name!: string;
   categoryId!: number;
+
+  static associate(db: any) {
+    SubCategory.belongsTo(db.Category, { foreignKey: "categoryId" });
+  }
 }
 
 SubCategory.init(
@@ -27,9 +30,10 @@ SubCategory.init(
     },
   },
   {
-    sequelize: sequelize,
-    tableName: "SubCategories",
-    modelName: "SubCategories",
+    sequelize,
+    tableName: "SubCategory",
+    modelName: "SubCategory",
   }
 );
-SubCategory.belongsTo(Category, { foreignKey: "categoryId" });
+
+export default SubCategory;

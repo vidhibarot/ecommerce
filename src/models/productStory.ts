@@ -1,10 +1,11 @@
 "use strict";
+
 import { Model, DataTypes } from "sequelize";
 import { sequelize } from "./index";
 import productStoryAttribute from "./interface/ProductstoryInterface";
-import { Product } from "./product";
+
 export class ProductStory
-  extends Model<productStoryAttribute, never>
+  extends Model<productStoryAttribute>
   implements productStoryAttribute
 {
   id!: number;
@@ -12,6 +13,10 @@ export class ProductStory
   description!: string;
   productId!: number;
   image!: string;
+
+  static associate(db: any) {
+    ProductStory.belongsTo(db.Product, { foreignKey: "productId" });
+  }
 }
 
 ProductStory.init(
@@ -29,15 +34,17 @@ ProductStory.init(
     },
     productId: {
       type: DataTypes.INTEGER,
+      allowNull: false,
     },
     image: {
       type: DataTypes.STRING,
     },
   },
   {
-    sequelize: sequelize,
+    sequelize,
     tableName: "ProductStories",
-    modelName: "ProductStories",
+    modelName: "ProductStory",
   }
 );
-ProductStory.belongsTo(Product, { foreignKey: "productId" });
+
+export default ProductStory;

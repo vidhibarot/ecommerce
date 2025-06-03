@@ -1,5 +1,5 @@
 export default interface subCategoryAttribute {
-  id: number;
+  id?: number;
   name: string;
   categoryId: number;
 }

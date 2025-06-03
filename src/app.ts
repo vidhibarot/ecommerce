@@ -4,8 +4,14 @@ import cors from '@koa/cors';
 import { koaSwagger } from 'koa2-swagger-ui';
 import authRoutes from "./routes/auth";
 import userRoutes from "./routes/userRoutes";
-import productRoutes from "./routes/product"
-import categoryRoutes from "./routes/category"
+import productRoutes from "./routes/product";
+import categoryRoutes from "./routes/category";
+import countryRoutes from "./routes/country";
+import stateRoutes from "./routes/state";
+import cityRoutes from "./routes/city";
+import orderRoutes from "./routes/order";
+import cartItemsRoutes from "./routes/cartItems";
+import userPreferenceRoutes from "./routes/userPreference"
 import { db } from './models/index';
 import swaggerJSDoc from 'swagger-jsdoc';
 import path from 'path';
@@ -53,7 +59,12 @@ app.use(authRoutes.routes()).use(authRoutes.allowedMethods());
 app.use(userRoutes.routes()).use(userRoutes.allowedMethods());
 app.use(productRoutes.routes()).use(productRoutes.allowedMethods());
 app.use(categoryRoutes.routes()).use(categoryRoutes.allowedMethods());
-
+app.use(countryRoutes.routes()).use(countryRoutes.allowedMethods());
+app.use(cityRoutes.routes()).use(cityRoutes.allowedMethods());
+app.use(stateRoutes.routes()).use(stateRoutes.allowedMethods());
+app.use(orderRoutes.routes()).use(orderRoutes.allowedMethods());
+app.use(cartItemsRoutes.routes()).use(cartItemsRoutes.allowedMethods());
+app.use(userPreferenceRoutes.routes()).use(userPreferenceRoutes.allowedMethods());
 
 const PORT = process.env.PORT || 5000;
 

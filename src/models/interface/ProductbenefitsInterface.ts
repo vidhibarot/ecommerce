@@ -1,5 +1,5 @@
 export default interface productBenefitsAttribute {
-    id: number;
+    id?: number;
     title: string;
     description: string;
     productId: number;

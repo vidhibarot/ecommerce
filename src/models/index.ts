@@ -10,7 +10,7 @@ const basename = path.basename(__filename);
 const db: any = {};
 let sequelize: any;
 
-// ✅ Initialize Sequelize properly
+// ✅ Initialize Sequelize
 sequelize = new Sequelize.Sequelize(
   process.env.DATABASE || 'ecommerce',
   process.env.DB_USERNAME || 'root',
@@ -22,7 +22,7 @@ sequelize = new Sequelize.Sequelize(
     dialectOptions: {
       timezone: '+05:30',
     },
-    logging: false, // optional: disables SQL logging in console
+    logging: false, // disable SQL logging
   }
 );
 
@@ -36,37 +36,33 @@ sequelize
     console.error('❌ Database connection error:', err.message);
   });
 
-// ✅ Import all models dynamically
-// fs.readdirSync(__dirname)
-//   .filter(file => {
-//     return file.indexOf('.') !== 0 && file !== basename && file.slice(-3) === '.ts';
-//   })
-//   .forEach(file => {
-//     const model = require(path.join(__dirname, file));
-//     db[model.default.name] = model.default;
-//   });
-
-// Object.keys(db).forEach(modelName => {
-//   if (db[modelName].associate) {
-//     db[modelName].associate(db);
-//   }
-// });
+// ✅ Dynamically import and register all models
 fs
-    .readdirSync(__dirname)
-    .filter(file => {
-        return (file.indexOf('.') !== 0) && (file !== basename) && (file.slice(-3) === '.ts');
-    })
-    .forEach(file => {
-        const model = require(path.join(__dirname, file))
-        db[model.default] = model;
-    });
+  .readdirSync(__dirname)
+  .filter((file) => {
+    return (
+      file.indexOf('.') !== 0 &&
+      file !== basename &&
+      file.slice(-3) === '.ts'
+    );
+  })
+  .forEach((file) => {
+    const modelModule = require(path.join(__dirname, file));
+    const model = modelModule.default;
 
-Object.keys(db).forEach(modelName => {
-    if (db[modelName].associate) {
-        db[modelName].associate(db);
+    if (model?.name) {
+      db[model.name] = model;
     }
+  });
+
+// ✅ Setup model associations
+Object.keys(db).forEach((modelName) => {
+  if (db[modelName].associate) {
+    db[modelName].associate(db);
+  }
 });
 
+// ✅ Export db and utilities
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;
 db.Op = Op;

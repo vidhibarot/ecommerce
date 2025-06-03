@@ -1,5 +1,5 @@
 export default interface productStoryAttribute {
-    id: number;
+    id?: number;
     title: string;
     description: string;
     productId: number;
