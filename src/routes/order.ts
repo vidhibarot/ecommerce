@@ -66,63 +66,28 @@ router.post("/add", validateCreateOrder,userAuth,controller.addOrder);
  */
 router.get("/", controller.getAllOrder);
 
-//Order payment
-/**
- * @swagger
- * /order/payment:
- *   post:
- *     summary: Verify and store transaction after payment
- *     tags: [Order]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               order_id:
- *                 type: string
- *               paymentId:
- *                 type: string
- *               transactionId:
- *                 type: string
- *               amount:
- *                 type: number
- *               paymentMethod:
- *                 type: string
- *     responses:
- *       200:
- *         description: Transaction verified and saved
- */
-router.post("/payment", userAuth, controller.orderPayment);
-
 //Payment refund
 /**
  * @swagger
- * /order/refund:
+ * /order/{orderId}/refund:
  *   post:
- *     summary: Refund a payment
- *     tags: [Order]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               paymentId:
- *                 type: string
- *                 description: Razorpay Payment ID to be refunded
+ *     summary: Refund a payment and cancel the order
+ *     tags:
+ *       - Order
+ *     parameters:
+ *       - in: path
+ *         name: orderId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the order to refund
  *     responses:
  *       200:
- *         description: Payment refunded successfully
- *       400:
- *         description: Bad request
- *       500:
- *         description: Internal server error
+ *         description: Refund successful
  */
-router.post("/refund", userAuth, controller.refundPayment);
+router.post("/order/:orderId/refund", controller.refundPayment);
 
+//Create order
 /**
  * @swagger
  * /order/create-order:

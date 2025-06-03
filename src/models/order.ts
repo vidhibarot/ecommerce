@@ -2,18 +2,18 @@ import { Model, DataTypes } from "sequelize";
 import { sequelize } from "./index";
 import orderAttribute from "./interface/OrderInterface";
 
-
 export enum status {
   INPROGRESS = "Inprogress",
   SHIPPED = "Shipped",
   DELIVERD = "Delivered",
-  FAILED="Failed",
+  FAILED = "Failed",
   CANCELLED = "Cancelled",
-  REFUNDED="Refunded"
+  REFUNDED = "Refunded",
 }
 
 export class Orders extends Model<orderAttribute> implements orderAttribute {
   id?: number;
+  orderId!:string;
   userId!: number;
   productId!: number;
   customerName!: string;
@@ -37,6 +37,9 @@ Orders.init(
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,
+    },
+    orderId: {
+      type: DataTypes.STRING,
     },
     userId: {
       type: DataTypes.INTEGER,

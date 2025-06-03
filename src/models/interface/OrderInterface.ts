@@ -1,5 +1,6 @@
 export default interface orderAttribute {
   id?: number;
+  orderId:string;
   userId: number;
   productId: number;
   customerName: string;

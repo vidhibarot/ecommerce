@@ -6,9 +6,8 @@ import DeliveryCharges from "../models/deliverycharges";
 import { STATUSDATA } from "../config/constant";
 import User from "../models/user";
 import { ORDERSTATUS, PAYMEMENTSTATUS } from "../config/constant";
-import { createHmac } from 'crypto';
+import { createHmac } from "crypto";
 const Razorpay = require("razorpay");
-
 
 const razorpayInstance = new Razorpay({
   key_id: process.env.RAZORPAY_ID_KEY,
@@ -43,7 +42,7 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_SECRET,
 });
 
-const secret:any = process.env.RAZORPAY_SECRET;
+const secret: any = process.env.RAZORPAY_SECRET;
 
 //Add Order Data
 const addOrder = async (ctx: Context) => {
@@ -89,8 +88,17 @@ const addOrder = async (ctx: Context) => {
     }
 
     const totalAmount = initialTotal + deliveryCharges;
+    const options = {
+      amount: totalAmount * 100,
+      currency: "INR",
+      receipt: `rcpt_${Date.now()}`,
+      payment_capture: 1,
+    };
+
+    const order = await razorpayInstance.orders.create(options);
 
     const newOrder = await Orders.create({
+      orderId: order.id,
       userId: ctx.state.user.id,
       productId,
       customerName,
@@ -107,7 +115,7 @@ const addOrder = async (ctx: Context) => {
     ctx.body = {
       status: true,
       message: "Order created successfully",
-      data: newOrder,
+      data: order,
     };
   } catch (error) {
     console.error("Add Order Error: ", error);
@@ -193,7 +201,6 @@ const orderPayment = async (ctx: Context) => {
 
     const status = paymentId ? PAYMEMENTSTATUS.SUCCESS : PAYMEMENTSTATUS.FAILED;
 
-    // Create a new transaction
     await Transaction.create({
       orderId: orderId,
       paymentId: paymentId || null,
@@ -209,7 +216,7 @@ const orderPayment = async (ctx: Context) => {
 
     await Orders.update(
       { status: updatedOrderStatus },
-      { where: { id: orderId } }
+      { where: { orderId: orderId } }
     );
 
     ctx.status = 200;
@@ -296,29 +303,36 @@ const verifyPayment = async (ctx: any) => {
     return;
   }
 
-const expectedSignature = createHmac('sha256',secret)
-  .update(`${orderId}|${paymentId}`)
-  .digest('hex');
+  const expectedSignature = createHmac("sha256", secret)
+    .update(`${orderId}|${paymentId}`)
+    .digest("hex");
 
-  const status = expectedSignature === transactionId ? 'success' : 'fail';
+  const status = expectedSignature === transactionId ? "success" : "fail";
 
   await Transaction.create({
-    orderId: orderId,
-    paymentId: paymentId,
+    orderId,
+    paymentId,
     transationId: transactionId,
-    paymentMethod:"RaZORPAY",
+    paymentMethod: "RAZORPAY",
     status,
-    amount, 
+    amount,
   });
 
-  if (status === 'success') {
+  const orderStatus =
+    status === "success" ? ORDERSTATUS.INPROGRESS : ORDERSTATUS.FAILED;
+
+  await Orders.update({ status: orderStatus }, { where: { orderId } });
+
+  if (status === "success") {
     ctx.body = { success: true, message: "Payment verified successfully!" };
   } else {
     ctx.status = 400;
-    ctx.body = { success: false, message: "Signature mismatch. Verification failed." };
+    ctx.body = {
+      success: false,
+      message: "Signature mismatch. Verification failed.",
+    };
   }
 };
-
 
 export = {
   getAllOrder,
@@ -326,5 +340,5 @@ export = {
   orderPayment,
   refundPayment,
   createRazorpayOrder,
-  verifyPayment
+  verifyPayment,
 };
