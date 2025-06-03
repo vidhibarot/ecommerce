@@ -66,7 +66,7 @@ router.post("/add", validateCreateOrder,userAuth,controller.addOrder);
  */
 router.get("/", controller.getAllOrder);
 
-//Payment refund
+//Payment Refund
 /**
  * @swagger
  * /order/{orderId}/refund:
@@ -85,44 +85,9 @@ router.get("/", controller.getAllOrder);
  *       200:
  *         description: Refund successful
  */
-router.post("/order/:orderId/refund", controller.refundPayment);
+router.post("/:orderId/refund", controller.refundPayment);
 
-//Create order
-/**
- * @swagger
- * /order/create-order:
- *   post:
- *     summary: Create a Razorpay order
- *     tags: [Order]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               amount:
- *                 type: number
- *                 example: 500
- *     responses:
- *       200:
- *         description: Razorpay order created
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 orderId:
- *                   type: string
- *                 amount:
- *                   type: number
- *                 currency:
- *                   type: string
- *                 key:
- *                   type: string
- */
-router.post("/create-order", userAuth, controller.createRazorpayOrder);
-
+//Payment verification
 /**
  * @swagger
  * /order/verify-payment:
@@ -156,5 +121,6 @@ router.post("/create-order", userAuth, controller.createRazorpayOrder);
  *         description: Payment verification failed
  */
 router.post('/verify-payment', controller.verifyPayment);
+
 
 export default router;

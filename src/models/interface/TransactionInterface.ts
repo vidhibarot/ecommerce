@@ -1,6 +1,6 @@
 export default interface transactionAttribute {
   id?: number;
-  orderId: number;
+  orderId: string;
   amount:string;
   transationId: string;
   paymentId: string;

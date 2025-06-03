@@ -11,14 +11,13 @@ export enum status {
 
 export class Transaction extends Model<transactionAttribute> implements transactionAttribute {
   id!: number;
-  orderId!: number;
+  orderId!: string;
   amount!:string;
   transationId!: string;
   paymentId!: string;
   paymentMethod!: string;
   status!: string;
   static associate(db: any) {
-    Transaction.belongsTo(db.Orders, { foreignKey: "orderId" });
     Transaction.belongsTo(db.Product, { foreignKey: "productId" });
   }
 }
@@ -31,7 +30,7 @@ Transaction.init(
       autoIncrement: true,
     },
     orderId: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING,
     },
     amount: {
       type: DataTypes.STRING,

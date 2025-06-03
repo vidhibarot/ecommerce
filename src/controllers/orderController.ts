@@ -193,107 +193,56 @@ const getAllOrder = async (ctx: Context) => {
   }
 };
 
-//Order Payment
-const orderPayment = async (ctx: Context) => {
-  try {
-    const { orderId, paymentId, amount, paymentMethod } = ctx.request
-      .body as any;
-
-    const status = paymentId ? PAYMEMENTSTATUS.SUCCESS : PAYMEMENTSTATUS.FAILED;
-
-    await Transaction.create({
-      orderId: orderId,
-      paymentId: paymentId || null,
-      paymentMethod: paymentMethod || "Razorpay",
-      transationId: Date.now().toString(),
-      status,
-      amount,
-    });
-
-    const updatedOrderStatus = paymentId
-      ? ORDERSTATUS.INPROGRESS
-      : ORDERSTATUS.FAILED;
-
-    await Orders.update(
-      { status: updatedOrderStatus },
-      { where: { orderId: orderId } }
-    );
-
-    ctx.status = 200;
-    ctx.body = {
-      status: true,
-      message: paymentId
-        ? "Payment successful. Order status updated to Inprogress."
-        : "Payment failed. Order status updated to Failed.",
-    };
-  } catch (error: any) {
-    ctx.status = 500;
-    ctx.body = {
-      status: false,
-      message: error.message || "Internal Server Error",
-    };
-  }
-};
-
 //Payment Refund
 const refundPayment = async (ctx: Context) => {
-  const { paymentId } = ctx.request.body as any;
-
-  if (!paymentId) {
-    ctx.status = 400;
-    ctx.body = { message: "paymentId is required" };
-    return;
-  }
-
+  const { orderId } = ctx.params;
+  console.log("orfedr isnnnnnn", orderId);
   try {
-    const refund = await razorpay.payments.refund(paymentId);
-    ctx.status = 200;
-    ctx.body = {
-      message: "Refund processed successfully",
-      refund,
-    };
-  } catch (err: any) {
-    console.error("Refund Error:", err);
-    ctx.status = 500;
-    ctx.body = {
-      message: "Refund failed",
-      error: err.message,
-    };
-  }
-};
+    const order = await Orders.findOne({
+      where: { orderId },
+    });
 
-const createRazorpayOrder = async (ctx: Context) => {
-  try {
-    const { amount } = ctx.request.body as any;
-
-    if (!amount) {
-      ctx.status = 400;
-      ctx.body = { error: "Amount is required" };
-      return;
+    if (!order) {
+      ctx.throw(404, "Order not found");
     }
 
-    const options = {
-      amount: amount * 100,
-      currency: "INR",
-      receipt: `rcpt_${Date.now()}`,
-      payment_capture: 1,
-    };
+    const transaction: any = await Transaction.findOne({
+      where: { orderId, status: PAYMEMENTSTATUS.SUCCESS },
+    });
 
-    const order = await razorpayInstance.orders.create(options);
+    if (!transaction) {
+      ctx.throw(404, "Transaction not found");
+    }
+
+    const refund = await razorpay.payments.refund(transaction.paymentId, {
+      amount: transaction.amount * 100,
+      speed: "normal",
+    });
+
+    transaction.status = PAYMEMENTSTATUS.REFUNDED;
+    await transaction.save();
+
+    order.status = ORDERSTATUS.CANCELLED;
+    await order.save();
 
     ctx.status = 200;
     ctx.body = {
-      orderId: order.id,
-      amount: order.amount,
-      currency: order.currency,
+      success: true,
+      message: "Refund successful and order cancelled",
+      refund,
     };
-  } catch (error) {
-    console.error("Razorpay Order Creation Error:", error);
+  } catch (error: any) {
+    console.error("Refund error:", error);
     ctx.status = 500;
-    ctx.body = { error: "Failed to create Razorpay order" };
+    ctx.body = {
+      success: false,
+      message: "Refund failed",
+      error: error?.message || "Internal Server Error",
+    };
   }
 };
 
+//Verify Payment
 const verifyPayment = async (ctx: any) => {
   const { orderId, paymentId, transactionId, amount } = ctx.request.body;
 
@@ -337,8 +286,6 @@ const verifyPayment = async (ctx: any) => {
 export = {
   getAllOrder,
   addOrder,
-  orderPayment,
   refundPayment,
-  createRazorpayOrder,
   verifyPayment,
 };
