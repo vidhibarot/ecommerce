@@ -123,5 +123,73 @@ router.post("/payment", userAuth, controller.orderPayment);
  */
 router.post("/refund", userAuth, controller.refundPayment);
 
+/**
+ * @swagger
+ * /order/create-order:
+ *   post:
+ *     summary: Create a Razorpay order
+ *     tags: [Order]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               amount:
+ *                 type: number
+ *                 example: 500
+ *     responses:
+ *       200:
+ *         description: Razorpay order created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 orderId:
+ *                   type: string
+ *                 amount:
+ *                   type: number
+ *                 currency:
+ *                   type: string
+ *                 key:
+ *                   type: string
+ */
+router.post("/create-order", userAuth, controller.createRazorpayOrder);
+
+/**
+ * @swagger
+ * /order/verify-payment:
+ *   post:
+ *     summary: Verify Razorpay payment and store transaction
+ *     tags: [Order]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - orderId
+ *               - paymentId
+ *               - transactionId
+ *               - amount
+ *             properties:
+ *               orderId:
+ *                 type: string
+ *               paymentId:
+ *                 type: string
+ *               transactionId:
+ *                 type: string
+ *               amount:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Payment verified successfully
+ *       400:
+ *         description: Payment verification failed
+ */
+router.post('/verify-payment', controller.verifyPayment);
 
 export default router;

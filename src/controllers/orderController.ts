@@ -6,7 +6,14 @@ import DeliveryCharges from "../models/deliverycharges";
 import { STATUSDATA } from "../config/constant";
 import User from "../models/user";
 import { ORDERSTATUS, PAYMEMENTSTATUS } from "../config/constant";
-const Razorpay = require('razorpay');
+import { createHmac } from 'crypto';
+const Razorpay = require("razorpay");
+
+
+const razorpayInstance = new Razorpay({
+  key_id: process.env.RAZORPAY_ID_KEY,
+  key_secret: process.env.RAZORPAY_SECRET,
+});
 
 interface orderAttributes {
   id?: number;
@@ -32,9 +39,11 @@ const status = {
 
 // Initialize Razorpay instance
 const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_ID_KEY!,
-  key_secret: process.env.RAZORPAY_SECRET!,
+  key_id: process.env.RAZORPAY_ID_KEY,
+  key_secret: process.env.RAZORPAY_SECRET,
 });
+
+const secret:any = process.env.RAZORPAY_SECRET;
 
 //Add Order Data
 const addOrder = async (ctx: Context) => {
@@ -179,7 +188,8 @@ const getAllOrder = async (ctx: Context) => {
 //Order Payment
 const orderPayment = async (ctx: Context) => {
   try {
-    const { orderId, paymentId, amount, paymentMethod } = ctx.request.body as any;
+    const { orderId, paymentId, amount, paymentMethod } = ctx.request
+      .body as any;
 
     const status = paymentId ? PAYMEMENTSTATUS.SUCCESS : PAYMEMENTSTATUS.FAILED;
 
@@ -224,7 +234,7 @@ const refundPayment = async (ctx: Context) => {
 
   if (!paymentId) {
     ctx.status = 400;
-    ctx.body = { message: 'paymentId is required' };
+    ctx.body = { message: "paymentId is required" };
     return;
   }
 
@@ -232,16 +242,80 @@ const refundPayment = async (ctx: Context) => {
     const refund = await razorpay.payments.refund(paymentId);
     ctx.status = 200;
     ctx.body = {
-      message: 'Refund processed successfully',
+      message: "Refund processed successfully",
       refund,
     };
-  } catch (err:any) {
-    console.error('Refund Error:', err);
+  } catch (err: any) {
+    console.error("Refund Error:", err);
     ctx.status = 500;
     ctx.body = {
-      message: 'Refund failed',
+      message: "Refund failed",
       error: err.message,
     };
+  }
+};
+
+const createRazorpayOrder = async (ctx: Context) => {
+  try {
+    const { amount } = ctx.request.body as any;
+
+    if (!amount) {
+      ctx.status = 400;
+      ctx.body = { error: "Amount is required" };
+      return;
+    }
+
+    const options = {
+      amount: amount * 100,
+      currency: "INR",
+      receipt: `rcpt_${Date.now()}`,
+      payment_capture: 1,
+    };
+
+    const order = await razorpayInstance.orders.create(options);
+
+    ctx.status = 200;
+    ctx.body = {
+      orderId: order.id,
+      amount: order.amount,
+      currency: order.currency,
+    };
+  } catch (error) {
+    console.error("Razorpay Order Creation Error:", error);
+    ctx.status = 500;
+    ctx.body = { error: "Failed to create Razorpay order" };
+  }
+};
+
+const verifyPayment = async (ctx: any) => {
+  const { orderId, paymentId, transactionId, amount } = ctx.request.body;
+
+  if (!orderId || !paymentId || !transactionId || !amount) {
+    ctx.status = 400;
+    ctx.body = { success: false, message: "Missing payment details." };
+    return;
+  }
+
+const expectedSignature = createHmac('sha256',secret)
+  .update(`${orderId}|${paymentId}`)
+  .digest('hex');
+
+  const status = expectedSignature === transactionId ? 'success' : 'fail';
+
+  await Transaction.create({
+    orderId: orderId,
+    paymentId: paymentId,
+    transationId: transactionId,
+    paymentMethod:"RaZORPAY",
+    status,
+    amount, 
+  });
+
+  if (status === 'success') {
+    ctx.body = { success: true, message: "Payment verified successfully!" };
+  } else {
+    ctx.status = 400;
+    ctx.body = { success: false, message: "Signature mismatch. Verification failed." };
   }
 };
 
@@ -251,4 +325,6 @@ export = {
   addOrder,
   orderPayment,
   refundPayment,
+  createRazorpayOrder,
+  verifyPayment
 };
