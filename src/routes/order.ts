@@ -122,5 +122,17 @@ router.post("/:orderId/refund", controller.refundPayment);
  */
 router.post('/verify-payment', controller.verifyPayment);
 
+//Gell User Orders Data
+/**
+ * @swagger
+ * /order/userOrders:
+ *   get:
+ *     summary: Get User order Data
+ *     tags: [Order]
+ *     responses:
+ *       200:
+ *         description: List of user order
+ */
+router.get("/userOrders", userAuth,controller.getUsersOrder);
 
 export default router;

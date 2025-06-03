@@ -133,9 +133,6 @@ const getAllOrder = async (ctx: Context) => {
     const findOrderData = await Orders.findAll({
       include: [
         {
-          model: Transaction,
-        },
-        {
           model: Product,
         },
       ],
@@ -169,9 +166,20 @@ const getAllOrder = async (ctx: Context) => {
       acc[user.id] = user;
       return acc;
     }, {});
+    const orderIds = findOrderData.map((order) => order.orderId);
+
+    const transactions = await Transaction.findAll({
+      where: { orderId: orderIds },
+    });
+
+    const transactionMap: any = transactions.reduce((acc: any, tx: any) => {
+      acc[tx.orderId] = tx;
+      return acc;
+    }, {});
 
     const ordersWithUser = findOrderData.map((order) => ({
       ...order.toJSON(),
+      transaction: transactionMap[order.orderId] || null,
       user: userMap[order.userId] || null,
     }));
 
@@ -256,7 +264,10 @@ const verifyPayment = async (ctx: any) => {
     .update(`${orderId}|${paymentId}`)
     .digest("hex");
 
-  const status = expectedSignature === transactionId ? "success" : "fail";
+  const status =
+    expectedSignature === transactionId
+      ? PAYMEMENTSTATUS.SUCCESS
+      : PAYMEMENTSTATUS.FAILED;
 
   await Transaction.create({
     orderId,
@@ -268,11 +279,13 @@ const verifyPayment = async (ctx: any) => {
   });
 
   const orderStatus =
-    status === "success" ? ORDERSTATUS.INPROGRESS : ORDERSTATUS.FAILED;
+    status === PAYMEMENTSTATUS.SUCCESS
+      ? ORDERSTATUS.INPROGRESS
+      : ORDERSTATUS.FAILED;
 
   await Orders.update({ status: orderStatus }, { where: { orderId } });
 
-  if (status === "success") {
+  if (status === PAYMEMENTSTATUS.SUCCESS) {
     ctx.body = { success: true, message: "Payment verified successfully!" };
   } else {
     ctx.status = 400;
@@ -283,9 +296,52 @@ const verifyPayment = async (ctx: any) => {
   }
 };
 
+//Gell User Orders Data
+const getUsersOrder = async (ctx: Context) => {
+  try {
+    const userId = ctx.state.user.id;
+
+    const findOrderData = await Orders.findAll({
+      where: { userId },
+      include: [{ model: Product }], // Only include Product
+    });
+
+    const orderIds = findOrderData.map((order) => order.orderId);
+
+    const transactions = await Transaction.findAll({
+      where: { orderId: orderIds },
+    });
+
+    const transactionMap: any = transactions.reduce((acc: any, tx: any) => {
+      acc[tx.orderId] = tx;
+      return acc;
+    }, {});
+
+    const ordersWithUser = findOrderData.map((order) => ({
+      ...order.toJSON(),
+      transaction: transactionMap[order.orderId] || null,
+    }));
+
+    ctx.status = 200;
+    ctx.body = {
+      status: true,
+      message: "All Order Fetched",
+      data: ordersWithUser,
+    };
+  } catch (error) {
+    console.error("err -> ", error);
+    ctx.status = 400;
+    ctx.body = {
+      status: false,
+      message: error instanceof Error ? error.message : "Unknown Error",
+    };
+  }
+};
+
 export = {
   getAllOrder,
   addOrder,
   refundPayment,
   verifyPayment,
+  getUsersOrder,
 };
