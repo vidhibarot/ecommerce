@@ -17,10 +17,30 @@ import swaggerJSDoc from 'swagger-jsdoc';
 import path from 'path';
 import serve from 'koa-static';
 import mount from 'koa-mount';
+import rawBody from 'raw-body';
+
 
 const app = new Koa();
 
 app.use(cors({ origin: '*' })); 
+
+// Custom middleware for Razorpay webhook route
+app.use(async (ctx, next) => {
+  if (ctx.path === "/order/razorpay-webhook" && ctx.method.toLowerCase() === "post") {
+    try {
+      const raw = await rawBody(ctx.req);
+      ctx.request.body = JSON.parse(raw.toString());
+      ctx.state.rawBody = raw.toString(); // Save for signature verification
+    } catch (err) {
+      ctx.throw(400, "Invalid webhook body");
+    }
+  }
+
+  await next();
+});
+
+// app.use(bodyParser()); // Now apply body parser for all other routes
+
 
 app.use(bodyParser());
 app.use(mount('/uploads', serve(path.join(__dirname, 'uploads'))));

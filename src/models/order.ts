@@ -13,20 +13,22 @@ export enum status {
 
 export class Orders extends Model<orderAttribute> implements orderAttribute {
   id?: number;
-  orderId!:string;
+  orderId!: string;
   userId!: number;
-  productId!: number;
+  // productId!: number;
   customerName!: string;
   email!: string;
   phoneno!: string;
   address!: string;
-  quantity!: number;
-  price!: number;
+  // quantity!: number;
+  // price!: number;
   deliveryCharges!: number;
   totalAmount!: number;
   status!: string;
   static associate(db: any) {
-    Orders.belongsTo(db.Product, { foreignKey: "productId" });
+    // Orders.belongsTo(db.Product, { foreignKey: "productId" });
+    Orders.hasMany(db.OrderItems, { foreignKey: "orderId" });
+
     // Orders.hasMany(db.Transaction, { foreignKey: "orderId" });
   }
 }
@@ -44,9 +46,9 @@ Orders.init(
     userId: {
       type: DataTypes.INTEGER,
     },
-    productId: {
-      type: DataTypes.INTEGER,
-    },
+    // productId: {
+    //   type: DataTypes.INTEGER,
+    // },
     customerName: {
       type: DataTypes.STRING,
     },
@@ -59,12 +61,12 @@ Orders.init(
     address: {
       type: DataTypes.STRING,
     },
-    quantity: {
-      type: DataTypes.STRING,
-    },
-    price: {
-      type: DataTypes.STRING,
-    },
+    // quantity: {
+    //   type: DataTypes.STRING,
+    // },
+    // price: {
+    //   type: DataTypes.STRING,
+    // },
     deliveryCharges: {
       type: DataTypes.STRING,
       allowNull: true,

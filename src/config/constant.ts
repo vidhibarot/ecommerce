@@ -89,3 +89,8 @@ export const PAYMEMENTSTATUS = {
   FAILED: "Failed",
   REFUNDED: "Refunded",
 } as const;
+
+export const PAYMENTMETHOD = {
+  ONLINE: "Online",
+  COD: "COD",
+};

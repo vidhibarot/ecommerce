@@ -19,8 +19,17 @@ import { validateCreateOrder } from "../validator/orderValidator";
  *           schema:
  *             type: object
  *             properties:
- *               productId:
- *                 type: integer
+ *               products:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     productId:
+ *                       type: integer
+ *                     quantity:
+ *                       type: integer
+ *                     price:
+ *                       type: number
  *               customerName:
  *                 type: string
  *               email:
@@ -42,13 +51,11 @@ import { validateCreateOrder } from "../validator/orderValidator";
  *                     type: string
  *                   zipcode:
  *                     type: string
- *               quantity:
- *                 type: integer
- *               price:
- *                 type: number
+ *               paymentMethod:
+ *                 type: string
  *     responses:
  *       201:
- *         description: Order created
+ *         description: Order created successfully
  */
 router.post("/add", validateCreateOrder,userAuth,controller.addOrder);
 
@@ -134,5 +141,9 @@ router.post('/verify-payment', controller.verifyPayment);
  *         description: List of user order
  */
 router.get("/userOrders", userAuth,controller.getUsersOrder);
+
+//Razorpay webhook
+router.post('/razorpay-webhook', controller.razorpayWebhook);
+
 
 export default router;

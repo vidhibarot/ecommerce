@@ -154,10 +154,11 @@ const addProductData = async (ctx: Context) => {
         });
       }
     }
-    
+
     console.log("bodyyyy..", body?.story, body?.benefits, body?.use);
 
     if (body?.story) {
+      console.log("story nma avdhhhhehehhehhhe");
       const data = JSON.parse(body?.story);
       await ProductStory.create({
         title: data.title,
@@ -168,6 +169,8 @@ const addProductData = async (ctx: Context) => {
     }
 
     if (body?.benefits) {
+      console.log("benefitsmsmmsm nma avdhhhhehehhehhhe");
+
       const data = JSON.parse(body?.benefits);
       await ProductBenefit.create({
         title: data.title,
@@ -176,6 +179,8 @@ const addProductData = async (ctx: Context) => {
       });
     }
     if (body?.use) {
+      console.log("usessss nma avdhhhhehehhehhhe");
+
       const data = JSON.parse(body?.benefits);
       await ProductUse.create({
         title: data.title,
@@ -187,7 +192,7 @@ const addProductData = async (ctx: Context) => {
     ctx.status = 200;
     ctx.body = {
       status: true,
-      message: "All Users Fetched",
+      message: "Product Data Added successfully",
       data: addProductData,
     };
   } catch (error) {
@@ -240,6 +245,8 @@ const updateProduct = async (ctx: Context) => {
 
     await Product.update(updateData, { where: { id } });
     if (body?.story) {
+      console.log("storyyyy nma avdhhhhehehhehhhe");
+
       const data = JSON.parse(body?.story);
       await ProductStory.destroy({ where: { productId: id } });
 
@@ -252,6 +259,8 @@ const updateProduct = async (ctx: Context) => {
     }
 
     if (body?.benefits) {
+      console.log("benefitsmsmmsm nma avdhhhhehehhehhhe");
+
       const data = JSON.parse(body?.benefits);
       await ProductBenefit.destroy({ where: { productId: id } });
 
@@ -262,6 +271,8 @@ const updateProduct = async (ctx: Context) => {
       });
     }
     if (body?.use) {
+      console.log("useeeseseesss nma avdhhhhehehhehhhe");
+
       const data = JSON.parse(body?.benefits);
       await ProductUse.destroy({ where: { productId: id } });
 

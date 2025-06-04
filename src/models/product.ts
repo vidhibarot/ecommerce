@@ -27,8 +27,8 @@ export class Product
     Product.hasMany(db.ProductBenefit, { foreignKey: "productId" });
     Product.hasMany(db.ProductUse, { foreignKey: "productId" });
     Product.hasMany(db.ProductStory, { foreignKey: "productId" });
-    Product.hasMany(db.Orders, { foreignKey: "productId" });
     Product.hasMany(db.CartItems, { foreignKey: "productId" });
+    Product.hasMany(db.OrderItems, { foreignKey: "productId" });
   }
 }
 

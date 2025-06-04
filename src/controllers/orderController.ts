@@ -3,10 +3,11 @@ import Orders from "../models/order";
 import Transaction from "../models/transaction";
 import Product from "../models/product";
 import DeliveryCharges from "../models/deliverycharges";
-import { STATUSDATA } from "../config/constant";
+import { PAYMENTMETHOD, STATUSDATA } from "../config/constant";
 import User from "../models/user";
 import { ORDERSTATUS, PAYMEMENTSTATUS } from "../config/constant";
 import { createHmac } from "crypto";
+import OrderItems from "../models/orderItems";
 const Razorpay = require("razorpay");
 
 const razorpayInstance = new Razorpay({
@@ -15,18 +16,24 @@ const razorpayInstance = new Razorpay({
 });
 
 interface orderAttributes {
-  id?: number;
-  userId: number;
-  productId: number;
+  products: {
+    productId: number;
+    quantity: number;
+    price: number;
+  }[];
+  userId?: number;
   customerName: string;
   email: string;
   phoneno: string;
-  address: any;
-  quantity: number;
-  price: number;
-  deliveryCharges: number;
-  totalAmount: number;
+  address: {
+    city: string;
+    zipcode: string;
+    [key: string]: any;
+  };
+  deliveryCharges?: number;
+  totalAmount?: number;
   status?: string;
+  paymentMethod: string;
 }
 
 const status = {
@@ -45,19 +52,123 @@ const razorpay = new Razorpay({
 const secret: any = process.env.RAZORPAY_SECRET;
 
 //Add Order Data
+// const addOrder = async (ctx: Context) => {
+//   try {
+//     const {
+//       productId,
+//       customerName,
+//       email,
+//       phoneno,
+//       address,
+//       quantity,
+//       price,
+//       paymentMethod,
+//     } = ctx.request.body as orderAttributes & { paymentMethod: string };
+
+//     const initialTotal = quantity * price;
+
+//     const deliveryChargeData = await DeliveryCharges.findOne({
+//       where: {
+//         city: address.city,
+//         zipcode: address.zipcode,
+//         status: STATUSDATA.ACTIVE,
+//       },
+//     });
+
+//     if (!deliveryChargeData) {
+//       ctx.status = 400;
+//       ctx.body = {
+//         status: false,
+//         message: "Delivery not available for the specified city or zipcode.",
+//       };
+//       return;
+//     }
+
+//     let deliveryCharges = 0;
+//     if (deliveryChargeData) {
+//       const minOrderValue = parseFloat(deliveryChargeData.minOrder);
+//       const chargeValue = parseFloat(deliveryChargeData.charge);
+
+//       if (initialTotal < minOrderValue) {
+//         deliveryCharges = chargeValue;
+//       }
+//     }
+
+//     const totalAmount = initialTotal + deliveryCharges;
+
+//     let razorpayOrder = null;
+
+//     if (paymentMethod === PAYMENTMETHOD.ONLINE) {
+//       const options = {
+//         amount: totalAmount * 100,
+//         currency: "INR",
+//         receipt: `rcpt_${Date.now()}`,
+//         payment_capture: 1,
+//       };
+
+//       razorpayOrder = await razorpayInstance.orders.create(options);
+//     }
+
+//     const newOrder = await Orders.create({
+//       orderId: razorpayOrder ? razorpayOrder.id : `cod_${Date.now()}`,
+//       userId: ctx.state.user.id,
+//       // productId,
+//       customerName,
+//       email,
+//       phoneno,
+//       address: JSON.stringify(address),
+//       quantity,
+//       price,
+//       deliveryCharges,
+//       totalAmount,
+//       status: paymentMethod === PAYMENTMETHOD.COD ? ORDERSTATUS.INPROGRESS : ORDERSTATUS.INPROGRESS, // Default to in-progress if COD
+//     });
+
+//     // Add COD Transaction if needed
+//     if (paymentMethod === PAYMENTMETHOD.COD) {
+//       await Transaction.create({
+//         orderId: newOrder.orderId,
+//         paymentId: "",
+//         transationId: "",
+//         paymentMethod: PAYMENTMETHOD.COD,
+//         status: PAYMEMENTSTATUS.INPROGRESS,
+//         amount: totalAmount.toString(),
+//       });
+//     }
+
+//     ctx.status = 201;
+//     ctx.body = {
+//       status: true,
+//       message: "Order created successfully",
+//       data: paymentMethod === "COD" ? newOrder : razorpayOrder,
+//     };
+//   } catch (error) {
+//     console.error("Add Order Error: ", error);
+//     ctx.status = 400;
+//     ctx.body = {
+//       status: false,
+//       message: error instanceof Error ? error.message : "Unknown error",
+//     };
+//   }
+// };
 const addOrder = async (ctx: Context) => {
   try {
-    const {
-      productId,
-      customerName,
-      email,
-      phoneno,
-      address,
-      quantity,
-      price,
-    } = ctx.request.body as orderAttributes;
+    const { products, customerName, email, phoneno, address, paymentMethod } =
+      ctx.request.body as orderAttributes;
 
-    const initialTotal = quantity * price;
+    if (!products || !Array.isArray(products) || products.length === 0) {
+      ctx.status = 400;
+      ctx.body = {
+        status: false,
+        message: "No products found in the order.",
+      };
+      return;
+    }
+
+    const initialTotal = products.reduce(
+      (sum, p) => sum + p.price * p.quantity,
+      0
+    );
 
     const deliveryChargeData = await DeliveryCharges.findOne({
       where: {
@@ -77,45 +188,64 @@ const addOrder = async (ctx: Context) => {
     }
 
     let deliveryCharges = 0;
+    const minOrderValue = parseFloat(deliveryChargeData.minOrder);
+    const chargeValue = parseFloat(deliveryChargeData.charge);
 
-    if (deliveryChargeData) {
-      const minOrderValue = parseFloat(deliveryChargeData.minOrder);
-      const chargeValue = parseFloat(deliveryChargeData.charge);
-
-      if (initialTotal < minOrderValue) {
-        deliveryCharges = chargeValue;
-      }
+    if (initialTotal < minOrderValue) {
+      deliveryCharges = chargeValue;
     }
 
     const totalAmount = initialTotal + deliveryCharges;
-    const options = {
-      amount: totalAmount * 100,
-      currency: "INR",
-      receipt: `rcpt_${Date.now()}`,
-      payment_capture: 1,
-    };
 
-    const order = await razorpayInstance.orders.create(options);
+    let razorpayOrder = null;
 
-    const newOrder = await Orders.create({
-      orderId: order.id,
+    if (paymentMethod === PAYMENTMETHOD.ONLINE) {
+      const options = {
+        amount: totalAmount * 100,
+        currency: "INR",
+        receipt: `rcpt_${Date.now()}`,
+        payment_capture: 1,
+      };
+      razorpayOrder = await razorpayInstance.orders.create(options);
+    }
+
+    const order: any = await Orders.create({
+      orderId: razorpayOrder ? razorpayOrder.id : `cod_${Date.now()}`,
       userId: ctx.state.user.id,
-      productId,
       customerName,
       email,
       phoneno,
       address: JSON.stringify(address),
-      quantity,
-      price,
       deliveryCharges,
       totalAmount,
+      status: ORDERSTATUS.INPROGRESS,
     });
+
+    for (const item of products) {
+      await OrderItems.create({
+        orderId: order.id,
+        productId: item.productId,
+        quantity: item.quantity,
+        price: item.price,
+      });
+    }
+
+    if (paymentMethod === PAYMENTMETHOD.COD) {
+      await Transaction.create({
+        orderId: order.orderId,
+        paymentId: "",
+        transationId: "",
+        paymentMethod: PAYMENTMETHOD.COD,
+        status: PAYMEMENTSTATUS.INPROGRESS,
+        amount: totalAmount.toString(),
+      });
+    }
 
     ctx.status = 201;
     ctx.body = {
       status: true,
       message: "Order created successfully",
-      data: order,
+      data: paymentMethod === PAYMENTMETHOD.COD ? order : razorpayOrder,
     };
   } catch (error) {
     console.error("Add Order Error: ", error);
@@ -133,7 +263,12 @@ const getAllOrder = async (ctx: Context) => {
     const findOrderData = await Orders.findAll({
       include: [
         {
-          model: Product,
+          model: OrderItems,
+          include: [
+            {
+              model: Product,
+            },
+          ],
         },
       ],
     });
@@ -303,7 +438,16 @@ const getUsersOrder = async (ctx: Context) => {
 
     const findOrderData = await Orders.findAll({
       where: { userId },
-      include: [{ model: Product }], // Only include Product
+      include: [
+        {
+          model: OrderItems,
+          include: [
+            {
+              model: Product,
+            },
+          ],
+        },
+      ],
     });
 
     const orderIds = findOrderData.map((order) => order.orderId);
@@ -338,10 +482,76 @@ const getUsersOrder = async (ctx: Context) => {
   }
 };
 
+const razorpayWebhook = async (ctx: Context) => {
+  const body = ctx.request.body as any;
+  const razorpaySignature = ctx.request.headers["x-razorpay-signature"];
+  const rawBody = ctx.state.rawBody;
+
+  const expectedSignature = createHmac("sha256", process.env.RAZORPAY_SECRET!)
+    .update(rawBody)
+    .digest("hex");
+
+  console.log("razorpaySignaturerazorpaySignature..", razorpaySignature);
+
+  console.log("exprected signaturererrerererer..", expectedSignature);
+
+  if (razorpaySignature !== expectedSignature) {
+    ctx.status = 400;
+    ctx.body = { success: false, message: "Invalid signature" };
+    return;
+  }
+
+  const event = body.event;
+
+  if (event === "payment.captured") {
+    console.log("in capturedddddd,,,,,,,,,");
+    const payment = body.payload.payment.entity;
+    const amount = payment.amount / 100;
+
+    await Transaction.create({
+      orderId: "null",
+      paymentId: payment.id,
+      transationId: payment.id,
+      paymentMethod: "online",
+      status: PAYMEMENTSTATUS.SUCCESS,
+      amount: amount.toString(),
+    });
+
+    console.log("✅ Webhook processed: payment.captured");
+  }
+  if (event === "payment.refunded") {
+    console.log("in refunded,refunded,,,,,,,,");
+
+    const payment = body.payload.payment.entity;
+
+    await Transaction.update(
+      { status: PAYMEMENTSTATUS.REFUNDED },
+      { where: { paymentId: payment.id } }
+    );
+
+    const transaction = await Transaction.findOne({
+      where: { paymentId: payment.id },
+    });
+    if (transaction?.orderId) {
+      await Orders.update(
+        { status: ORDERSTATUS.CANCELLED },
+        { where: { id: transaction.orderId } }
+      );
+    }
+
+    ctx.status = 200;
+    ctx.body = { success: true };
+  }
+
+  ctx.status = 200;
+  ctx.body = { success: true };
+};
+
 export = {
   getAllOrder,
   addOrder,
   refundPayment,
   verifyPayment,
   getUsersOrder,
+  razorpayWebhook,
 };
