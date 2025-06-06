@@ -1,6 +1,7 @@
 import { Context } from "koa";
 import CartItems from "../models/cartItems";
 import Product from "../models/product";
+import { STATUS_CODES } from "../config/constant";
 
 interface cartItemsAttribute {
   id?: number;
@@ -52,7 +53,7 @@ const updateCartItems = async (ctx: Context) => {
     });
 
     if (!cartItem) {
-      ctx.status = 404;
+      ctx.status = STATUS_CODES.NOT_FOUND;
       ctx.body = {
         status: false,
         message: "Cart item not found or does not belong to this user",
@@ -63,7 +64,7 @@ const updateCartItems = async (ctx: Context) => {
     cartItem.quantity = quantity || cartItem.quantity;
     await cartItem.save();
 
-    ctx.status = 200;
+    ctx.status = STATUS_CODES.SUCCESS;
     ctx.body = {
       status: true,
       message: "Cart item updated successfully",
@@ -91,7 +92,7 @@ const deleteCartItems = async (ctx: Context) => {
     });
 
     if (!cartItem) {
-      ctx.status = 404;
+      ctx.status = STATUS_CODES.NOT_FOUND;
       ctx.body = {
         status: false,
         message: "Cart item not found or does not belong to this user",
@@ -101,7 +102,7 @@ const deleteCartItems = async (ctx: Context) => {
 
     await cartItem.destroy();
 
-    ctx.status = 200;
+    ctx.status = STATUS_CODES.SUCCESS;
     ctx.body = {
       status: true,
       message: "Cart item deleted successfully",
@@ -131,7 +132,7 @@ const getCartItems = async (ctx: Context) => {
     });
 
     if (cartItem.length == 0) {
-      ctx.status = 404;
+      ctx.status = STATUS_CODES.NOT_FOUND;
       ctx.body = {
         status: false,
         message: "Cart item not found or does not belong to this user",
@@ -139,7 +140,7 @@ const getCartItems = async (ctx: Context) => {
       return;
     }
 
-    ctx.status = 200;
+    ctx.status = STATUS_CODES.SUCCESS;
     ctx.body = {
       status: true,
       message: "Cart items fetched successfully",
@@ -164,7 +165,7 @@ const deleteUserCartItems = async (ctx: Context) => {
       },
     });
 
-    ctx.status = 200;
+    ctx.status = STATUS_CODES.SUCCESS;
     ctx.body = {
       status: true,
       message: "Cart items deleted successfully",
@@ -179,10 +180,79 @@ const deleteUserCartItems = async (ctx: Context) => {
   }
 };
 
+//Get CartItems Total Order Summary Data
+const getCartTotalSummary = async (ctx: Context) => {
+  try {
+    const userId = ctx.state.user.id;
+
+    const cartItems = await CartItems.findAll({
+      where: { userId },
+      include: [
+        {
+          model: Product,
+          attributes: ["id", "price", "discount"],
+        },
+      ],
+    });
+
+
+    let totalWithoutDiscount = 0;
+    let totalDiscount = 0;
+    let totalAfterDiscount = 0;
+
+    const cartDetails = cartItems.map((item: any) => {
+      const product = item.Product;
+      const quantity = item.quantity;
+
+      const price = product.price;
+      const discountPrice = product.discount;
+      const priceAfterDiscount = price - discountPrice;
+
+      const lineTotalWithoutDiscount = price * quantity;
+      const lineDiscount = discountPrice * quantity;
+      const lineTotalAfterDiscount = priceAfterDiscount * quantity;
+
+      totalWithoutDiscount += lineTotalWithoutDiscount;
+      totalDiscount += lineDiscount;
+      totalAfterDiscount += lineTotalAfterDiscount;
+
+
+      return {
+        productId: product.id,
+        quantity,
+        price,
+        discountPrice,
+        priceAfterDiscount,
+        lineTotalWithoutDiscount,
+        lineDiscount,
+        lineTotalAfterDiscount,
+      };
+    });
+
+    ctx.body = {
+      status: true,
+      cartTotalSummary: {
+        totalWithoutDiscount,
+        totalDiscount,
+        totalAfterDiscount,
+      },
+      // cartDetails,
+    };
+  } catch (error: any) {
+    ctx.status = 500;
+    ctx.body = {
+      status: false,
+      message: "Failed to fetch cart summary",
+      error: error.message,
+    };
+  }
+};
+
 export = {
   addCartItems,
   updateCartItems,
   deleteCartItems,
   getCartItems,
   deleteUserCartItems,
+  getCartTotalSummary,
 };

@@ -112,5 +112,18 @@ router.get("/get", userAuth, controller.getCartItems);
  */
 router.delete("/userCart/delete", userAuth, controller.deleteUserCartItems);
 
+//Get CartItems Total Order Summary Data
+/**
+ * @swagger
+ * /cart/get/orderSummary:
+ *   get:
+ *     summary: get a cart item order summary Data
+ *     tags: [Cart]
+ *     description: get a cart item order summary Data
+ *     responses:
+ *       200:
+ *         description: Item fetched successfully
+ */
+router.get("/get/orderSummary", userAuth, controller.getCartTotalSummary);
 
 export default router;
