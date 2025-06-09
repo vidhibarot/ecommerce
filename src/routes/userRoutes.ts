@@ -59,4 +59,19 @@ router.post("/getprofile", userAuth, controller.getUserProfile);
  */
 router.put("/updateprofile", userAuth, controller.updateUserProfile);
 
+//Gell All Customers Data
+/**
+ * @swagger
+ * /users/getcustomer:
+ *   get:
+ *     summary: Get all Customers
+ *     tags: [Users]
+ *     security: []
+ *     responses:
+ *       200:
+ *         description: List of Customers
+ */
+router.get("/getcustomer", controller.getAllCustomers);
+
+
 export default router;

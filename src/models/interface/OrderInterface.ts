@@ -1,6 +1,6 @@
 export default interface orderAttribute {
   id?: number;
-  orderId:string;
+  orderId: string;
   userId: number;
   // productId: number;
   customerName: string;
@@ -12,4 +12,6 @@ export default interface orderAttribute {
   deliveryCharges: number;
   totalAmount: number;
   status?: string;
+  createdAt?: Date; // ✅ add this
+  updatedAt?: Date; // (optional) also add this if your model includes it
 }

@@ -2,6 +2,9 @@ import { Context } from "koa";
 import { User } from "../models/user";
 import { Role } from "../models/role";
 import { Op } from "sequelize";
+import { ROLE_TYPES_ID } from "../config/constant";
+import moment from "moment";
+import Orders from "../models/order";
 
 interface userAttributes {
   id: number;
@@ -134,8 +137,77 @@ const updateUserProfile = async (ctx: Context) => {
   }
 };
 
+//Gell All Customers Data
+const getAllCustomers = async (ctx: Context) => {
+  try {
+    const findCustomers = await User.findAndCountAll({
+      where: {
+        roleId: ROLE_TYPES_ID.USER,
+      },
+      attributes: { exclude: ["createdAt", "updatedAt"] },
+    });
+
+    const startOfMonth = moment().startOf("month").toDate();
+    const endOfMonth = moment().endOf("month").toDate();
+
+    const newCustomersThisMonth = await User.count({
+      where: {
+        roleId: ROLE_TYPES_ID.USER,
+        createdAt: {
+          [Op.between]: [startOfMonth, endOfMonth],
+        },
+      },
+    });
+
+    const enrichedCustomers = await Promise.all(
+      findCustomers.rows.map(async (customer: any) => {
+        const orders = await Orders.findAll({
+          where: { userId: customer.id },
+          order: [["id", "DESC"]],
+        });
+
+        const totalOrders = orders.length;
+        const totalExpense = orders.reduce(
+          (sum: number, order: any) => sum + (Number(order.totalAmount) || 0),
+          0
+        );
+
+        const lastOrder = orders[0];
+
+        return {
+          ...customer.toJSON(),
+          totalOrders,
+          totalExpense,
+          lastOrderDate: lastOrder
+            ? moment(lastOrder.dataValues.createdAt).format("YYYY-MM-DD")
+            : null,
+        };
+      })
+    );
+
+    ctx.status = 200;
+    ctx.body = {
+      status: true,
+      message: "All Customers Fetched",
+      data: {
+        count: findCustomers.count,
+        rows: enrichedCustomers,
+      },
+      newCustomers: newCustomersThisMonth,
+    };
+  } catch (error) {
+    console.error("err -> ", error);
+    ctx.status = 400;
+    ctx.body = {
+      status: false,
+      message: error instanceof Error ? error.message : "Unknown Error",
+    };
+  }
+};
+
 export = {
   getAllUser,
   getUserProfile,
   updateUserProfile,
+  getAllCustomers,
 };
