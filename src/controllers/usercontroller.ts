@@ -205,9 +205,60 @@ const getAllCustomers = async (ctx: Context) => {
   }
 };
 
+//Update User status
+const updateUserStatus = async (ctx: Context) => {
+  try {
+    const { userId, status } = ctx.request.body as any;
+
+    if (!userId || !status) {
+      ctx.status = 400;
+      ctx.body = { status: false, message: "userId and status are required" };
+      return;
+    }
+
+    const userToUpdate = await User.findOne({
+      where: {
+        id: userId,
+      },
+    });
+
+    if (!userToUpdate) {
+      ctx.status = 404;
+      ctx.body = {
+        status: false,
+        message: "User not found or not a regular user",
+      };
+      return;
+    }
+
+    await User.update(
+      { status },
+      {
+        where: {
+          id: userId,
+        },
+      }
+    );
+
+    ctx.status = 200;
+    ctx.body = {
+      status: true,
+      message: "User status updated successfully",
+    };
+  } catch (error) {
+    console.error("Error updating user status:", error);
+    ctx.status = 500;
+    ctx.body = {
+      status: false,
+      message: error instanceof Error ? error.message : "Internal Server Error",
+    };
+  }
+};
+
 export = {
   getAllUser,
   getUserProfile,
   updateUserProfile,
   getAllCustomers,
+  updateUserStatus,
 };

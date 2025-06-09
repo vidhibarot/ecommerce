@@ -73,5 +73,34 @@ router.put("/updateprofile", userAuth, controller.updateUserProfile);
  */
 router.get("/getcustomer", controller.getAllCustomers);
 
+//Update User status
+/**
+ * @swagger
+ * /users/update-status:
+ *   put:
+ *     summary: Admin updates user status
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - userId
+ *               - status
+ *             properties:
+ *               userId:
+ *                 type: integer
+ *               status:
+ *                 type: string
+ *                 enum: [Active, Inactive]
+ *     responses:
+ *       200:
+ *         description: User status updated
+ */
+router.put("/update-status", userAuth, controller.updateUserStatus);
+
+
 
 export default router;

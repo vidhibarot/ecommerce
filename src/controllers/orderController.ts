@@ -52,105 +52,6 @@ const razorpay = new Razorpay({
 const secret: any = process.env.RAZORPAY_SECRET;
 
 //Add Order Data
-// const addOrder = async (ctx: Context) => {
-//   try {
-//     const {
-//       productId,
-//       customerName,
-//       email,
-//       phoneno,
-//       address,
-//       quantity,
-//       price,
-//       paymentMethod,
-//     } = ctx.request.body as orderAttributes & { paymentMethod: string };
-
-//     const initialTotal = quantity * price;
-
-//     const deliveryChargeData = await DeliveryCharges.findOne({
-//       where: {
-//         city: address.city,
-//         zipcode: address.zipcode,
-//         status: STATUSDATA.ACTIVE,
-//       },
-//     });
-
-//     if (!deliveryChargeData) {
-//       ctx.status = 400;
-//       ctx.body = {
-//         status: false,
-//         message: "Delivery not available for the specified city or zipcode.",
-//       };
-//       return;
-//     }
-
-//     let deliveryCharges = 0;
-//     if (deliveryChargeData) {
-//       const minOrderValue = parseFloat(deliveryChargeData.minOrder);
-//       const chargeValue = parseFloat(deliveryChargeData.charge);
-
-//       if (initialTotal < minOrderValue) {
-//         deliveryCharges = chargeValue;
-//       }
-//     }
-
-//     const totalAmount = initialTotal + deliveryCharges;
-
-//     let razorpayOrder = null;
-
-//     if (paymentMethod === PAYMENTMETHOD.ONLINE) {
-//       const options = {
-//         amount: totalAmount * 100,
-//         currency: "INR",
-//         receipt: `rcpt_${Date.now()}`,
-//         payment_capture: 1,
-//       };
-
-//       razorpayOrder = await razorpayInstance.orders.create(options);
-//     }
-
-//     const newOrder = await Orders.create({
-//       orderId: razorpayOrder ? razorpayOrder.id : `cod_${Date.now()}`,
-//       userId: ctx.state.user.id,
-//       // productId,
-//       customerName,
-//       email,
-//       phoneno,
-//       address: JSON.stringify(address),
-//       quantity,
-//       price,
-//       deliveryCharges,
-//       totalAmount,
-//       status: paymentMethod === PAYMENTMETHOD.COD ? ORDERSTATUS.INPROGRESS : ORDERSTATUS.INPROGRESS, // Default to in-progress if COD
-//     });
-
-//     // Add COD Transaction if needed
-//     if (paymentMethod === PAYMENTMETHOD.COD) {
-//       await Transaction.create({
-//         orderId: newOrder.orderId,
-//         paymentId: "",
-//         transationId: "",
-//         paymentMethod: PAYMENTMETHOD.COD,
-//         status: PAYMEMENTSTATUS.INPROGRESS,
-//         amount: totalAmount.toString(),
-//       });
-//     }
-
-//     ctx.status = 201;
-//     ctx.body = {
-//       status: true,
-//       message: "Order created successfully",
-//       data: paymentMethod === "COD" ? newOrder : razorpayOrder,
-//     };
-//   } catch (error) {
-//     console.error("Add Order Error: ", error);
-//     ctx.status = 400;
-//     ctx.body = {
-//       status: false,
-//       message: error instanceof Error ? error.message : "Unknown error",
-//     };
-//   }
-// };
 const addOrder = async (ctx: Context) => {
   try {
     const { products, customerName, email, phoneno, address, paymentMethod } =
@@ -165,6 +66,21 @@ const addOrder = async (ctx: Context) => {
       return;
     }
 
+    const userData = await User.findOne({
+      where: {
+        id: ctx.state.user.id,
+        status: STATUSDATA.ACTIVE,
+      },
+    });
+
+    if (!userData) {
+      ctx.status = 403;
+      ctx.body = {
+        status: false,
+        message: "Your account is inactive or does not exist.",
+      };
+      return;
+    }
     const initialTotal = products.reduce(
       (sum, p) => sum + p.price * p.quantity,
       0

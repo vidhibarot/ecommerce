@@ -1,6 +1,6 @@
 import { Model, DataTypes } from "sequelize";
 import { sequelize } from "./index";
-import orderItemsAttribute from "./interface/OrderItemsinterface";
+import orderItemsAttribute from "./interface/OrderItemsInterface";
 
 export class OrderItems
   extends Model<orderItemsAttribute>
