@@ -2,9 +2,10 @@ import { Context } from "koa";
 import { User } from "../models/user";
 import { Role } from "../models/role";
 import { Op } from "sequelize";
-import { ROLE_TYPES_ID } from "../config/constant";
+import { ROLE_TYPES_ID, USERSTATUS } from "../config/constant";
 import moment from "moment";
 import Orders from "../models/order";
+import Sequelize from "sequelize";
 
 interface userAttributes {
   id: number;
@@ -158,6 +159,29 @@ const getAllCustomers = async (ctx: Context) => {
         },
       },
     });
+    const totalCustomers = await User.count({
+      where: {
+        roleId: ROLE_TYPES_ID.USER,
+        status: USERSTATUS.ACTIVE,
+      },
+    });
+
+    //  Find Customers with > 1 Order (Repeat Customers)
+    const repeatCustomersData = await Orders.findAll({
+      attributes: [
+        "userId",
+        [Sequelize.fn("COUNT", Sequelize.col("id")), "orderCount"],
+      ],
+      group: ["userId"],
+      having: Sequelize.literal("COUNT(id) > 1"),
+    });
+
+    const repeatCustomersCount = repeatCustomersData.length;
+
+    const repeatPurchaseRate = totalCustomers
+      ? ((repeatCustomersCount / totalCustomers) * 100).toFixed(2)
+      : "0.00";
+    console.log("repeatPurchaseRate", repeatPurchaseRate);
 
     const enrichedCustomers = await Promise.all(
       findCustomers.rows.map(async (customer: any) => {
@@ -194,6 +218,7 @@ const getAllCustomers = async (ctx: Context) => {
         rows: enrichedCustomers,
       },
       newCustomers: newCustomersThisMonth,
+      repeatPurchasePercentage: `${repeatPurchaseRate}%`,
     };
   } catch (error) {
     console.error("err -> ", error);

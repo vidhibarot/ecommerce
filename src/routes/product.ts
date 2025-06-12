@@ -1,5 +1,4 @@
 import Router from "koa-router";
-import { validateAddProduct, validateUpdateProduct } from "../validator/productValidator";
 import userAuth from "../middleware/auth";
 
 const controller = require("../controllers/productcontroller");

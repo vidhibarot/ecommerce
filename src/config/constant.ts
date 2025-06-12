@@ -94,3 +94,8 @@ export const PAYMENTMETHOD = {
   ONLINE: "Online",
   COD: "COD",
 };
+
+export const USERSTATUS = {
+  ACTIVE: "Active",
+  INACTIVE: "Inactive",
+};

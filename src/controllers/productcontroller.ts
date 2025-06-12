@@ -172,9 +172,10 @@ const addProductData = async (ctx: Context) => {
       console.log("benefitsmsmmsm nma avdhhhhehehhehhhe");
 
       const data = JSON.parse(body?.benefits);
+      console.log("datatatattata",data)
       await ProductBenefit.create({
         title: data.title,
-        description: data.description,
+        description: JSON.stringify(data.description),
         productId: addProductData?.id,
       });
     }
@@ -184,7 +185,7 @@ const addProductData = async (ctx: Context) => {
       const data = JSON.parse(body?.benefits);
       await ProductUse.create({
         title: data.title,
-        description: data.description,
+        description: JSON.stringify(data.description),
         productId: addProductData?.id,
       });
     }
@@ -266,7 +267,7 @@ const updateProduct = async (ctx: Context) => {
 
       await ProductBenefit.create({
         title: data.title,
-        description: data.description,
+        description: JSON.stringify(data.description),
         productId: id,
       });
     }
@@ -278,7 +279,7 @@ const updateProduct = async (ctx: Context) => {
 
       await ProductUse.create({
         title: data.title,
-        description: data.description,
+        description: JSON.stringify(data.description),
         productId: id,
       });
     }

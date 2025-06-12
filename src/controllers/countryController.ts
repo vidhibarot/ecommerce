@@ -1,9 +1,5 @@
 import { Context } from "koa";
 import Country from "../models/country";
-interface countryAttributes {
-  id: number;
-  name: string;
-}
 
 //Gell All Country Data
 const getAllCountry = async (ctx: Context) => {
