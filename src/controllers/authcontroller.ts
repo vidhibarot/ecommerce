@@ -111,6 +111,15 @@ const login = async (ctx: Context) => {
       return;
     }
 
+        var date = new Date();
+
+    console.log("newwww", date,new Date());
+
+    await User.update(
+      { updatedAt: new Date() },
+      { where: { id: existingUser.id } }
+    );
+
     // Generate token
     const payload = {
       id: existingUser.id,

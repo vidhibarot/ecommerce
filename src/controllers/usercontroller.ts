@@ -123,7 +123,6 @@ const updateUserProfile = async (ctx: Context) => {
     };
 
     const [updated] = await User.update(updateObject, { where: { id } });
-    console.log("updateddddddd......", updated);
     if (updated) {
       ctx.status = 200;
       ctx.body = { status: true, message: "User Updated Successfully" };
