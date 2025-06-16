@@ -5,7 +5,10 @@ import { Role } from "../models/role";
 import dotenv from "dotenv";
 import { Context } from "koa";
 import { Op } from "sequelize";
-import { ROLE_TYPES_ID } from "../config/constant";
+import { EMAILCONSTANT, ROLE_TYPES_ID } from "../config/constant";
+import { emailSender } from "../middleware/email.helper";
+import { generateOtp } from "../middleware/helper";
+import moment from "moment";
 
 dotenv.config();
 
@@ -14,17 +17,26 @@ interface userAttributes {
   name: string;
   email: string;
   password: string;
-  phoneno:string;
+  phoneno: string;
   confirmPassword: string;
   roleId: number;
   adminPassword?: string;
+  otp?: string;
+  otp_expire_time?: Date;
 }
 
 //Register User
 const register = async (ctx: Context) => {
   try {
-    let { name, email, password, phoneno ,roleId, confirmPassword, adminPassword } = ctx
-      .request.body as userAttributes;
+    let {
+      name,
+      email,
+      password,
+      phoneno,
+      roleId,
+      confirmPassword,
+      adminPassword,
+    } = ctx.request.body as userAttributes;
 
     const existingUser = await User.findOne({ where: { email }, raw: true });
 
@@ -148,10 +160,51 @@ const login = async (ctx: Context) => {
   }
 };
 
-//User forgot password
+// User forgot password
 const forgotPassword = async (ctx: Context) => {
   try {
     const { email } = ctx.request.body as userAttributes;
+    const OTP: any = await generateOtp(6);
+
+    const user = await User.findOne({ where: { email }, raw: true });
+    if (!user) {
+      ctx.status = 400;
+      ctx.body = { status: false, message: "Email Not Found" };
+      return;
+    }
+    var date = new Date();
+    date.setMinutes(date.getMinutes() + 2);
+
+    await User.update(
+      { otp: OTP, otp_expire_time: date },
+      { where: { id: user.id } }
+    );
+
+    const templateData = { email, OTP };
+
+    await emailSender(
+      email,
+      EMAILCONSTANT.FORGOT_PASSWORD.subject,
+      templateData,
+      EMAILCONSTANT.FORGOT_PASSWORD.template
+    );
+
+    ctx.body = {
+      status: true,
+      message: "OTP sent successfully to your email",
+    };
+  } catch (error) {
+    console.error(error);
+    ctx.status = 400;
+    ctx.body = { status: false, message: "Something went wrong" };
+  }
+};
+
+// Resend Otp api
+const resendOTP = async (ctx: Context) => {
+  try {
+    const { email } = ctx.request.body as userAttributes;
+    const OTP: any = await generateOtp(6);
 
     const user = await User.findOne({ where: { email }, raw: true });
     if (!user) {
@@ -160,18 +213,105 @@ const forgotPassword = async (ctx: Context) => {
       return;
     }
 
-    // const OTP = await generateOtp(6);
-    // await User.update({ otp: OTP, otp_expire_time: await otpExpTime() }, { where: { id: user.id } });
+    var date = new Date();
+    date.setMinutes(date.getMinutes() + 2);
 
-    // const templateData = { email, OTP };
-    // await emailSender(email, EMAILCONSTANT.FORGOT_PASSWORD.subject, templateData, EMAILCONSTANT.FORGOT_PASSWORD.template);
+    await User.update(
+      { otp: OTP, otp_expire_time: date },
+      { where: { id: user.id } }
+    );
 
-    ctx.status = 200;
-    ctx.body = { status: true, message: "OTP sent successfully to your email" };
+    const templateData = { email, OTP };
+
+    await emailSender(
+      email,
+      EMAILCONSTANT.RESEND_OTP.subject,
+      templateData,
+      EMAILCONSTANT.RESEND_OTP.template
+    );
+
+    ctx.body = {
+      status: true,
+      message: "OTP resent successfully to your email",
+    };
   } catch (error) {
     console.error(error);
-    ctx.status = 500;
-    ctx.body = { status: false, message: "Server Error" };
+    ctx.status = 400;
+    ctx.body = { status: false, message: "Something went wrong" };
+  }
+};
+
+// Verify User Otp
+const verifyOtp = async (ctx: Context) => {
+  try {
+    const { email, otp } = ctx.request.body as userAttributes;
+
+    const user = await User.findOne({
+      where: { email },
+      attributes: ["id", "otp", "otp_expire_time"],
+      raw: true,
+    });
+    if (!user) {
+      ctx.status = 400;
+      ctx.body = { status: false, message: "Email Not Found" };
+      return;
+    }
+
+    if (moment(user.otp_expire_time).isBefore(moment())) {
+      ctx.status = 400;
+      ctx.body = { status: false, message: "OTP Expired" };
+      return;
+    }
+
+    if (otp != user.otp) {
+      ctx.status = 400;
+      ctx.body = { status: false, message: "Invalid OTP" };
+      return;
+    }
+
+    await User.update(
+      { otp: null, otp_expire_time: null },
+      { where: { id: user.id } }
+    );
+
+    ctx.body = {
+      status: true,
+      message: "OTP Verified Successfully",
+    };
+  } catch (error) {
+    console.error(error);
+    ctx.status = 400;
+    ctx.body = { status: false, message: "Something went wrong" };
+  }
+};
+
+// User Reset password
+const resetPassword = async (ctx: Context) => {
+  try {
+    const { email, password } = ctx.request.body as userAttributes;
+
+    const user = await User.findOne({
+      where: { email },
+      attributes: ["id"],
+      raw: true,
+    });
+    if (!user) {
+      ctx.status = 400;
+      ctx.body = { status: false, message: "Email Not Found" };
+      return;
+    }
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await User.update({ password: hashedPassword }, { where: { id: user.id } });
+
+    ctx.body = {
+      status: true,
+      message: "Password reset successfully",
+    };
+  } catch (error) {
+    console.error(error);
+    ctx.status = 400;
+    ctx.body = { status: false, message: "Something went wrong" };
   }
 };
 
@@ -326,4 +466,7 @@ export = {
   updateUserById,
   deleteUserById,
   getUserById,
+  resendOTP,
+  verifyOtp,
+  resetPassword,
 };

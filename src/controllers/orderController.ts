@@ -3,7 +3,7 @@ import Orders from "../models/order";
 import Transaction from "../models/transaction";
 import Product from "../models/product";
 import DeliveryCharges from "../models/deliverycharges";
-import { PAYMENTMETHOD, STATUSDATA } from "../config/constant";
+import { PAYMENTMETHOD, STATUSDATA, USERSTATUS } from "../config/constant";
 import User from "../models/user";
 import { ORDERSTATUS, PAYMEMENTSTATUS } from "../config/constant";
 import { createHmac } from "crypto";
@@ -255,7 +255,6 @@ const getAllOrder = async (ctx: Context) => {
 //Payment Refund
 const refundPayment = async (ctx: Context) => {
   const { orderId } = ctx.params;
-  console.log("orfedr isnnnnnn", orderId);
   try {
     const order = await Orders.findOne({
       where: { orderId },
@@ -347,7 +346,7 @@ const verifyPayment = async (ctx: any) => {
   }
 };
 
-//Gell User Orders Data
+// Get User Orders Data
 const getUsersOrder = async (ctx: Context) => {
   try {
     const userId = ctx.state.user.id;
@@ -398,6 +397,55 @@ const getUsersOrder = async (ctx: Context) => {
   }
 };
 
+// Get Delivery charge data
+const getDeliveryCharge = async (ctx: Context) => {
+  try {
+    const { city, zipcode, totalAmount } = ctx.request.body as any;
+
+    if (!city || !zipcode || totalAmount == null) {
+      ctx.status = 400;
+      ctx.body = {
+        status: false,
+        message: "City, Zipcode, and totalAmount are required",
+      };
+      return;
+    }
+
+    const deliveryChargeData: any = await DeliveryCharges.findOne({
+      where: {
+        city,
+        zipcode,
+        status: USERSTATUS.ACTIVE,
+      },
+    });
+
+    const isFreeDelivery = totalAmount >= deliveryChargeData.minOrder;
+    const deliveryCharge = isFreeDelivery ? 0 : deliveryChargeData.charge;
+
+    const message = isFreeDelivery
+      ? `Congratulations! You have free delivery for orders above ₹${deliveryChargeData.minOrder}`
+      : `Add ₹${
+          deliveryChargeData.minOrder - totalAmount
+        } more to get free delivery`;
+
+    ctx.status = 200;
+    ctx.body = {
+      status: true,
+      deliveryCharge,
+      isFreeDelivery,
+      minOrderAmount: deliveryChargeData.minOrder,
+      totalAmount,
+      message,
+    };
+  } catch (error: any) {
+    ctx.status = 500;
+    ctx.body = {
+      status: false,
+      message: error.message || "Internal Server Error",
+    };
+  }
+};
+
 const razorpayWebhook = async (ctx: Context) => {
   const body = ctx.request.body as any;
   const razorpaySignature = ctx.request.headers["x-razorpay-signature"];
@@ -406,10 +454,6 @@ const razorpayWebhook = async (ctx: Context) => {
   const expectedSignature = createHmac("sha256", process.env.RAZORPAY_SECRET!)
     .update(rawBody)
     .digest("hex");
-
-  console.log("razorpaySignaturerazorpaySignature..", razorpaySignature);
-
-  console.log("exprected signaturererrerererer..", expectedSignature);
 
   if (razorpaySignature !== expectedSignature) {
     ctx.status = 400;
@@ -420,7 +464,6 @@ const razorpayWebhook = async (ctx: Context) => {
   const event = body.event;
 
   if (event === "payment.captured") {
-    console.log("in capturedddddd,,,,,,,,,");
     const payment = body.payload.payment.entity;
     const amount = payment.amount / 100;
 
@@ -433,10 +476,8 @@ const razorpayWebhook = async (ctx: Context) => {
       amount: amount.toString(),
     });
 
-    console.log("✅ Webhook processed: payment.captured");
   }
   if (event === "payment.refunded") {
-    console.log("in refunded,refunded,,,,,,,,");
 
     const payment = body.payload.payment.entity;
 
@@ -470,4 +511,5 @@ export = {
   verifyPayment,
   getUsersOrder,
   razorpayWebhook,
+  getDeliveryCharge,
 };

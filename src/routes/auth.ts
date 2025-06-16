@@ -6,6 +6,9 @@ const {
   forgotPassword,
   updateUserById,
   getUserById,
+  resendOTP,
+  verifyOtp,
+  resetPassword
 } = require("../controllers/authcontroller");
 const router = new Router({ prefix: "/auth" });
 
@@ -16,7 +19,7 @@ const router = new Router({ prefix: "/auth" });
  *   description: Authentication endpoints
  */
 
-//User Register
+// User Register
 /**
  * @swagger
  * /auth/register:
@@ -55,7 +58,7 @@ const router = new Router({ prefix: "/auth" });
  */
 router.post("/register",validateRegister, register);
 
-//User Login
+// User Login
 /**
  * @swagger
  * /auth/login:
@@ -83,12 +86,12 @@ router.post("/register",validateRegister, register);
  */
 router.post("/login", validateLogin, login);
 
-//Forgot Password
+// Forgot Password
 /**
  * @swagger
  * /auth/forgotpassword:
  *   post:
- *     summary: forgot password
+ *     summary: Generate OTP for forgot password
  *     tags: [Auth]
  *     security: []
  *     requestBody:
@@ -102,11 +105,109 @@ router.post("/login", validateLogin, login);
  *             properties:
  *               email:
  *                 type: string
+ *                 example: example@example.com
  *     responses:
  *       200:
- *         description: Logged in successfully
+ *         description: OTP sent to email
  */
 router.post("/forgotpassword", forgotPassword);
+
+// Resend OTP
+/**
+ * @swagger
+ * /auth/resendotp:
+ *   post:
+ *     summary: Resend OTP to email
+ *     tags: [Auth]
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: example@example.com
+ *     responses:
+ *       200:
+ *         description: OTP resent to email
+ */
+router.post("/resendotp", resendOTP);
+
+// Verify OTP
+/**
+ * @swagger
+ * /auth/verifyotp:
+ *   post:
+ *     summary: Verify OTP for forgot password
+ *     tags: [Auth]
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - otp
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: example@example.com
+ *               otp:
+ *                 type: string
+ *                 example: "123456"
+ *     responses:
+ *       200:
+ *         description: OTP verified successfully
+ */
+router.post("/verifyotp", verifyOtp);
+
+//Reset Password
+/**
+ * @swagger
+ * /auth/resetpassword:
+ *   post:
+ *     summary: Reset password using email
+ *     tags: [Auth]
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: "user@example.com"
+ *               password:
+ *                 type: string
+ *                 example: "NewSecurePassword123"
+ *     responses:
+ *       200:
+ *         description: Password reset successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Password reset successfully"
+ */
+router.post("/resetpassword", resetPassword);
 
 //Update User
 /**

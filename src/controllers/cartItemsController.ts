@@ -130,7 +130,6 @@ const getCartItems = async (ctx: Context) => {
         },
       ],
     });
-
     if (cartItem.length == 0) {
       ctx.status = STATUS_CODES.NOT_FOUND;
       ctx.body = {
@@ -195,7 +194,6 @@ const getCartTotalSummary = async (ctx: Context) => {
       ],
     });
 
-
     let totalWithoutDiscount = 0;
     let totalDiscount = 0;
     let totalAfterDiscount = 0;
@@ -205,23 +203,24 @@ const getCartTotalSummary = async (ctx: Context) => {
       const quantity = item.quantity;
 
       const price = product.price;
-      const discountPrice = product.discount;
-      const priceAfterDiscount = price - discountPrice;
+      const discountPercent = product.discount || 0;
+      const discountAmountPerItem = (price * discountPercent) / 100;
+      const priceAfterDiscount = price - discountAmountPerItem;
 
       const lineTotalWithoutDiscount = price * quantity;
-      const lineDiscount = discountPrice * quantity;
+      const lineDiscount = discountAmountPerItem * quantity;
       const lineTotalAfterDiscount = priceAfterDiscount * quantity;
 
       totalWithoutDiscount += lineTotalWithoutDiscount;
       totalDiscount += lineDiscount;
       totalAfterDiscount += lineTotalAfterDiscount;
 
-
       return {
         productId: product.id,
         quantity,
         price,
-        discountPrice,
+        discountPercent,
+        discountAmountPerItem,
         priceAfterDiscount,
         lineTotalWithoutDiscount,
         lineDiscount,

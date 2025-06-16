@@ -5,7 +5,8 @@ const router = new Router({ prefix: "/order" });
 import userAuth from "../middleware/auth";
 import { validateCreateOrder } from "../validator/orderValidator";
 
-//Add Order Data 
+// Add Order Data 
+
 /**
  * @swagger
  * /order/add:
@@ -59,7 +60,7 @@ import { validateCreateOrder } from "../validator/orderValidator";
  */
 router.post("/add", validateCreateOrder,userAuth,controller.addOrder);
 
-//Gell All Orders Data
+// Get All Orders Data
 /**
  * @swagger
  * /order:
@@ -73,7 +74,7 @@ router.post("/add", validateCreateOrder,userAuth,controller.addOrder);
  */
 router.get("/", controller.getAllOrder);
 
-//Payment Refund
+// Payment Refund
 /**
  * @swagger
  * /order/{orderId}/refund:
@@ -94,7 +95,7 @@ router.get("/", controller.getAllOrder);
  */
 router.post("/:orderId/refund", controller.refundPayment);
 
-//Payment verification
+// Payment verification
 /**
  * @swagger
  * /order/verify-payment:
@@ -129,7 +130,7 @@ router.post("/:orderId/refund", controller.refundPayment);
  */
 router.post('/verify-payment', controller.verifyPayment);
 
-//Gell User Orders Data
+// Gell User Orders Data
 /**
  * @swagger
  * /order/userOrders:
@@ -142,8 +143,37 @@ router.post('/verify-payment', controller.verifyPayment);
  */
 router.get("/userOrders", userAuth,controller.getUsersOrder);
 
-//Razorpay webhook
+// Razorpay webhook
 router.post('/razorpay-webhook', controller.razorpayWebhook);
 
+// Add CartItems Data
+/**
+ * @swagger
+ * /order/getdeliveryCharge:
+ *   post:
+ *     summary: Get Delivery Charge based on city and state 
+ *     tags: [Order]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - city
+ *               - zipcode
+ *               - totalAmount
+ *             properties:
+ *               city:
+ *                 type: string
+ *               zipcode:
+ *                 type: string
+ *               totalAmount:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: Delivery charge
+ */
+router.post("/getdeliveryCharge", userAuth,controller.getDeliveryCharge);
 
 export default router;

@@ -2,7 +2,7 @@ import { Context } from "koa";
 import { Op } from "sequelize";
 import { Product } from "../models/product";
 import { Category } from "../models/category";
-import createLiveImageURL from "../middleware/helper";
+import { createLiveImageURL } from "../middleware/helper";
 import { ProductBenefit } from "../models/productBenefits";
 import { ProductUse } from "../models/productUse";
 import { ProductStory } from "../models/productStory";
@@ -18,8 +18,6 @@ interface FilterField {
 const getAllProduct = async (ctx: Context) => {
   try {
     let { page, limit, price, searchvalue } = ctx.params;
-
-    console.log("pagegggg", page, limit, price, searchvalue);
 
     const currentPage = parseInt(page);
     const itemsPerPage = parseInt(limit);
@@ -155,10 +153,7 @@ const addProductData = async (ctx: Context) => {
       }
     }
 
-    console.log("bodyyyy..", body?.story, body?.benefits, body?.use);
-
     if (body?.story) {
-      console.log("story nma avdhhhhehehhehhhe");
       const data = JSON.parse(body?.story);
       await ProductStory.create({
         title: data.title,
@@ -169,10 +164,7 @@ const addProductData = async (ctx: Context) => {
     }
 
     if (body?.benefits) {
-      console.log("benefitsmsmmsm nma avdhhhhehehhehhhe");
-
       const data = JSON.parse(body?.benefits);
-      console.log("datatatattata",data)
       await ProductBenefit.create({
         title: data.title,
         description: JSON.stringify(data.description),
@@ -180,8 +172,6 @@ const addProductData = async (ctx: Context) => {
       });
     }
     if (body?.use) {
-      console.log("usessss nma avdhhhhehehhehhhe");
-
       const data = JSON.parse(body?.benefits);
       await ProductUse.create({
         title: data.title,
@@ -246,8 +236,6 @@ const updateProduct = async (ctx: Context) => {
 
     await Product.update(updateData, { where: { id } });
     if (body?.story) {
-      console.log("storyyyy nma avdhhhhehehhehhhe");
-
       const data = JSON.parse(body?.story);
       await ProductStory.destroy({ where: { productId: id } });
 
@@ -260,8 +248,6 @@ const updateProduct = async (ctx: Context) => {
     }
 
     if (body?.benefits) {
-      console.log("benefitsmsmmsm nma avdhhhhehehhehhhe");
-
       const data = JSON.parse(body?.benefits);
       await ProductBenefit.destroy({ where: { productId: id } });
 
@@ -272,8 +258,6 @@ const updateProduct = async (ctx: Context) => {
       });
     }
     if (body?.use) {
-      console.log("useeeseseesss nma avdhhhhehehhehhhe");
-
       const data = JSON.parse(body?.benefits);
       await ProductUse.destroy({ where: { productId: id } });
 
@@ -414,12 +398,8 @@ const getProductById = async (ctx: Context) => {
       message: "Product fetched successfully",
       data: {
         product,
-        // images: product.ProductImages,
         categories,
         discountPrice,
-        // story: product.ProductStories,
-        // benefits: product.ProductBenefits,
-        // uses: product.ProductUses,
       },
     };
   } catch (error) {
