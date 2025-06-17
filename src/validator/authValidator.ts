@@ -68,3 +68,24 @@ export const validateUpdateUser = async (ctx: any, next: any) => {
     };
   }
 };
+
+export const validateUser = async (ctx: any, next: any) => {
+  const schema = Joi.object({
+    name: Joi.string().required(),
+    email: Joi.string().email().required(),
+    phoneno: Joi.string().required(),
+    roleId: Joi.number().optional(),
+  });
+
+  try {
+    await schema.validateAsync(ctx.request.body, { abortEarly: false });
+    await next();
+  } catch (err: any) {
+    ctx.status = 400;
+    ctx.body = {
+      status: false,
+      message: "Validation Error",
+      details: err.details.map((d: any) => d.message),
+    };
+  }
+};

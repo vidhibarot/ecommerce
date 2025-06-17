@@ -9,13 +9,18 @@ export enum status {
   REFUNDED = "Refunded",
 }
 
-export class Transaction extends Model<transactionAttribute> implements transactionAttribute {
+export class Transaction
+  extends Model<transactionAttribute>
+  implements transactionAttribute
+{
   id!: number;
   orderId!: string;
-  amount!:string;
+  amount!: string;
   transationId!: string;
   paymentId!: string;
   paymentMethod!: string;
+  refundId!: string;
+  refundAmount!: string;
   status!: string;
   static associate(db: any) {
     Transaction.belongsTo(db.Product, { foreignKey: "productId" });
@@ -42,6 +47,12 @@ Transaction.init(
       type: DataTypes.STRING,
     },
     paymentMethod: {
+      type: DataTypes.STRING,
+    },
+    refundId: {
+      type: DataTypes.STRING,
+    },
+    refundAmount: {
       type: DataTypes.STRING,
     },
     status: {

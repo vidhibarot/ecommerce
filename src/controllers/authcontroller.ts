@@ -7,7 +7,7 @@ import { Context } from "koa";
 import { Op } from "sequelize";
 import { EMAILCONSTANT, ROLE_TYPES_ID } from "../config/constant";
 import { emailSender } from "../middleware/email.helper";
-import { generateOtp } from "../middleware/helper";
+import { generateCustomPassword, generateOtp } from "../middleware/helper";
 import moment from "moment";
 
 dotenv.config();
@@ -25,7 +25,7 @@ interface userAttributes {
   otp_expire_time?: Date;
 }
 
-//Register User
+// Register User
 const register = async (ctx: Context) => {
   try {
     let {
@@ -91,7 +91,7 @@ const register = async (ctx: Context) => {
   }
 };
 
-//Login User
+// Login User
 const login = async (ctx: Context) => {
   try {
     const { email, password } = ctx.request.body as userAttributes;
@@ -111,14 +111,11 @@ const login = async (ctx: Context) => {
       return;
     }
 
-        var date = new Date();
+    var date = new Date();
 
-    console.log("newwww", date,new Date());
+    console.log("newwww", date, new Date(), existingUser.id);
 
-    await User.update(
-      { updatedAt: new Date() },
-      { where: { id: existingUser.id } }
-    );
+    await User.update({ updatedAt: date }, { where: { id: existingUser.id } });
 
     // Generate token
     const payload = {
@@ -324,11 +321,11 @@ const resetPassword = async (ctx: Context) => {
   }
 };
 
-//Update User By Id
+// Update User By Id
 const updateUserById = async (ctx: Context) => {
   try {
     const { id } = ctx.params;
-    const { name, email } = ctx.request.body as userAttributes;
+    const { name, email, phoneno } = ctx.request.body as userAttributes;
 
     const existingUser = await User.findByPk(id);
     if (!existingUser) {
@@ -354,6 +351,7 @@ const updateUserById = async (ctx: Context) => {
     const updateObject: any = {
       name,
       email,
+      phoneno,
     };
 
     const [updated] = await User.update(updateObject, { where: { id } });
@@ -371,51 +369,37 @@ const updateUserById = async (ctx: Context) => {
   }
 };
 
-//Delete User BY Id
+// Delete User BY Id
 const deleteUserById = async (ctx: Context) => {
   try {
-    const { name, email, password, roleId, confirmPassword } = ctx.request
-      .body as userAttributes;
+    const { id } = ctx.params;
 
-    const existingUser = await User.findOne({ where: { email }, raw: true });
-
-    if (existingUser) {
+    if (!id) {
       ctx.status = 400;
-      ctx.body = { status: false, message: "Email Already Exists" };
-      return;
-    }
-    if (password !== confirmPassword) {
-      ctx.status = 400;
-      ctx.body = { status: false, message: "Passwords do not match" };
+      ctx.body = { status: false, message: "User ID is required" };
       return;
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await User.findByPk(id);
 
-    const createObject: any = {
-      name,
-      email,
-      roleId,
-      password: hashedPassword,
-    };
-
-    const createdUser = await User.create(createObject);
-
-    if (createdUser) {
-      ctx.status = 200;
-      ctx.body = { status: true, message: "Registered Successfully" };
-    } else {
-      ctx.status = 400;
-      ctx.body = { status: false, message: "Something Went Wrong" };
+    if (!user) {
+      ctx.status = 404;
+      ctx.body = { status: false, message: "User not found" };
+      return;
     }
+
+    await user.destroy();
+
+    ctx.status = 200;
+    ctx.body = { status: true, message: "User deleted successfully" };
   } catch (error) {
     console.error(error);
     ctx.status = 500;
-    ctx.body = { status: false, message: "Server Error" };
+    ctx.body = { status: false, message: "Internal Server Error" };
   }
 };
 
-//Get User By Id
+// Get User By Id
 const getUserById = async (ctx: Context) => {
   try {
     const { id } = ctx.params;
@@ -434,13 +418,13 @@ const getUserById = async (ctx: Context) => {
       raw: false,
       nest: true,
       attributes: ["id", "name", "roleId", "email", "password"],
-      include: [
-        {
-          model: Role,
-          as: "role_info",
-          attributes: ["name"],
-        },
-      ],
+      // include: [
+      //   {
+      //     model: Role,
+      //     as: "role_info",
+      //     attributes: ["name"],
+      //   },
+      // ],
     });
 
     if (getUserInfo) {
@@ -468,6 +452,61 @@ const getUserById = async (ctx: Context) => {
   }
 };
 
+// Add User By Admin
+const addUserByAdmin = async (ctx: Context) => {
+  try {
+    const { name, email, roleId, phoneno } = ctx.request.body as userAttributes;
+
+    const existingUser = await User.findOne({ where: { email }, raw: true });
+    if (existingUser) {
+      ctx.status = 400;
+      ctx.body = { status: false, message: "Email already exists" };
+      return;
+    }
+
+    const plainPassword = generateCustomPassword(name, email);
+    const hashedPassword = await bcrypt.hash(plainPassword, 10);
+
+    const createObj: any = {
+      name,
+      email,
+      phoneno,
+      password: hashedPassword,
+      roleId: roleId || ROLE_TYPES_ID.USER,
+    };
+
+    const createdUser = await User.create(createObj);
+
+    if (createdUser) {
+      const templateData = {
+        name,
+        email,
+        password: plainPassword,
+      };
+
+      await emailSender(
+        email,
+        EMAILCONSTANT.LOGIN_PASSWORD.subject,
+        templateData,
+        EMAILCONSTANT.LOGIN_PASSWORD.template
+      );
+
+      ctx.status = 200;
+      ctx.body = {
+        status: true,
+        message: "User created successfully and password sent via email",
+      };
+    } else {
+      ctx.status = 400;
+      ctx.body = { status: false, message: "Something went wrong" };
+    }
+  } catch (error) {
+    console.error(error);
+    ctx.status = 500;
+    ctx.body = { status: false, message: "Internal Server Error" };
+  }
+};
+
 export = {
   login,
   register,
@@ -478,4 +517,5 @@ export = {
   resendOTP,
   verifyOtp,
   resetPassword,
+  addUserByAdmin,
 };

@@ -17,6 +17,8 @@ export class User extends Model<userAttributes> implements userAttributes {
   status!: string;
   otp!: string;
   otp_expire_time!: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
   static associate(db: any) {
     User.belongsTo(db.Role, { foreignKey: "roleId", as: "role_info" });
     User.hasMany(db.Orders, { foreignKey: "userId" });
@@ -52,11 +54,16 @@ User.init(
     otp_expire_time: {
       type: DataTypes.DATE,
     },
-
     status: {
       type: DataTypes.ENUM,
       values: Object.values(status),
       defaultValue: status.ACTIVE,
+    },
+    createdAt: {
+      type: DataTypes.DATE,
+    },
+    updatedAt: {
+      type: DataTypes.DATE,
     },
   },
   {

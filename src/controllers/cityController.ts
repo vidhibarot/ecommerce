@@ -1,12 +1,6 @@
 import { Context } from "koa";
 import City from "../models/city";
 
-interface cityAttributes {
-  id: number;
-  name: string;
-  stateId:Number;
-}
-
 //Gell All City Data
 const getAllCity = async (ctx: Context) => {
   try {

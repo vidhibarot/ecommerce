@@ -1,5 +1,5 @@
 import Router from "koa-router";
-import { validateLogin, validateRegister, validateUpdateUser } from "../validator/authValidator";
+import { validateLogin, validateRegister, validateUpdateUser, validateUser } from "../validator/authValidator";
 const {
   register,
   login,
@@ -8,9 +8,12 @@ const {
   getUserById,
   resendOTP,
   verifyOtp,
-  resetPassword
+  resetPassword,
+  deleteUserById,
+  addUserByAdmin
 } = require("../controllers/authcontroller");
 const router = new Router({ prefix: "/auth" });
+import userAuth from "../middleware/auth";
 
 /**
  * @swagger
@@ -233,16 +236,42 @@ router.post("/resetpassword", resetPassword);
  *             required:
  *               - name
  *               - email
+ *               - phoneno
  *             properties:
  *               name:
  *                 type: string
  *               email:
  *                 type: string
+ *               phoneno:
+ *                 type: string
+ *                
  *     responses:
  *       200:
  *         description: User updated
  */
 router.put("/update/:id",validateUpdateUser, updateUserById);
+
+//Delete User
+/**
+ * @swagger
+ * /auth/delete/{id}:
+ *   delete:
+ *     summary: Delete a user
+ *     tags: [Auth]
+ *     security: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Unique identifier for the user
+ *                
+ *     responses:
+ *       200:
+ *         description: User updated
+ */
+router.delete("/delete/:id", deleteUserById);
 
 //Get User By Id
 /**
@@ -264,5 +293,39 @@ router.put("/update/:id",validateUpdateUser, updateUserById);
  *         description: User updated
  */
 router.get("/get/:id", getUserById);
+
+// Add User By Admin
+/**
+ * @swagger
+ * /auth/addUserByAdmin:
+ *   post:
+ *     summary: Register a new user
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - email
+ *               - phoneno
+ *               - roleId
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               phoneno:
+ *                 type: string
+ *               roleId:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: User registered
+ */
+router.post("/addUserByAdmin",validateUser,userAuth,addUserByAdmin);
+
 
 export default router;

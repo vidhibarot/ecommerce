@@ -1,5 +1,7 @@
 import fs from "fs";
 import moment from "moment"
+import crypto from "crypto";
+
 const readHTMLFile = function (path: any, cb: any) {
   // read file
   fs.readFile(path, "utf-8", function (err, data) {
@@ -25,5 +27,11 @@ const generateOtp = async (n: any) => {
     const val = Math.floor(Math.random() * (9 * Math.pow(10, n - 1))) + Math.pow(10, n - 1);
     return val;
 }
+const generateCustomPassword = (name: string, email: string) => {
+  const namePart = name.replace(/\s+/g, "").slice(0, 3).toLowerCase();
+  const emailPart = email.split("@")[0].slice(0, 3).toLowerCase();  
+  const randomPart = crypto.randomBytes(2).toString("hex");  
+  return `${namePart}${emailPart}${randomPart}`;
+};
 
-export { createLiveImageURL, readHTMLFile,generateOtp };
+export { createLiveImageURL, readHTMLFile,generateOtp,generateCustomPassword };

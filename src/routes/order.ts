@@ -5,7 +5,7 @@ const router = new Router({ prefix: "/order" });
 import userAuth from "../middleware/auth";
 import { validateCreateOrder } from "../validator/orderValidator";
 
-// Add Order Data 
+// Add Order Data
 
 /**
  * @swagger
@@ -58,7 +58,7 @@ import { validateCreateOrder } from "../validator/orderValidator";
  *       201:
  *         description: Order created successfully
  */
-router.post("/add", validateCreateOrder,userAuth,controller.addOrder);
+router.post("/add", validateCreateOrder, userAuth, controller.addOrder);
 
 // Get All Orders Data
 /**
@@ -79,19 +79,37 @@ router.get("/", controller.getAllOrder);
  * @swagger
  * /order/{orderId}/refund:
  *   post:
- *     summary: Refund a payment and cancel the order
- *     tags:
- *       - Order
+ *     summary: Refund payment for a cancelled order
+ *     tags: [Order]
  *     parameters:
  *       - in: path
  *         name: orderId
  *         required: true
  *         schema:
- *           type: string
- *         description: ID of the order to refund
+ *           type: integer
+ *         description: The ID of the order to refund
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - refundAmount
+ *             properties:
+ *               refundAmount:
+ *                 type: number
+ *                 example: 600
+ *                 description: Amount to refund (in main currency unit, e.g., INR)
  *     responses:
  *       200:
- *         description: Refund successful
+ *         description: Refund processed successfully
+ *       400:
+ *         description: Bad request (e.g., already refunded or invalid refund amount)
+ *       404:
+ *         description: Order or transaction not found
+ *       500:
+ *         description: Internal Server Error
  */
 router.post("/:orderId/refund", controller.refundPayment);
 
@@ -128,7 +146,7 @@ router.post("/:orderId/refund", controller.refundPayment);
  *       400:
  *         description: Payment verification failed
  */
-router.post('/verify-payment', controller.verifyPayment);
+router.post("/verify-payment", controller.verifyPayment);
 
 // Gell User Orders Data
 /**
@@ -141,17 +159,17 @@ router.post('/verify-payment', controller.verifyPayment);
  *       200:
  *         description: List of user order
  */
-router.get("/userOrders", userAuth,controller.getUsersOrder);
+router.get("/userOrders", userAuth, controller.getUsersOrder);
 
 // Razorpay webhook
-router.post('/razorpay-webhook', controller.razorpayWebhook);
+router.post("/razorpay-webhook", controller.razorpayWebhook);
 
 // Add CartItems Data
 /**
  * @swagger
  * /order/getdeliveryCharge:
  *   post:
- *     summary: Get Delivery Charge based on city and state 
+ *     summary: Get Delivery Charge based on city and state
  *     tags: [Order]
  *     requestBody:
  *       required: true
@@ -174,6 +192,31 @@ router.post('/razorpay-webhook', controller.razorpayWebhook);
  *       200:
  *         description: Delivery charge
  */
-router.post("/getdeliveryCharge", userAuth,controller.getDeliveryCharge);
+router.post("/getdeliveryCharge", userAuth, controller.getDeliveryCharge);
+
+//Cancel order data
+
+/**
+ * @swagger
+ * /order/cancel/{id}:
+ *   post:
+ *     summary: Cancel an order with refund eligibility
+ *     tags: [Order]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Order ID to cancel
+ *     responses:
+ *       200:
+ *         description: Order canceled successfully
+ *       400:
+ *         description: Cannot cancel order (either not refundable or invalid status)
+ *       404:
+ *         description: Order not found
+ */
+router.post("/cancel/:id", userAuth, controller.cancelOrder);
 
 export default router;

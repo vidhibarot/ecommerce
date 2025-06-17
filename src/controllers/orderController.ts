@@ -8,6 +8,7 @@ import User from "../models/user";
 import { ORDERSTATUS, PAYMEMENTSTATUS } from "../config/constant";
 import { createHmac } from "crypto";
 import OrderItems from "../models/orderItems";
+import moment from "moment";
 const Razorpay = require("razorpay");
 
 const razorpayInstance = new Razorpay({
@@ -255,33 +256,56 @@ const getAllOrder = async (ctx: Context) => {
 //Payment Refund
 const refundPayment = async (ctx: Context) => {
   const { orderId } = ctx.params;
+  const { refundAmount } = ctx.request.body as any;
+
   try {
-    const order = await Orders.findOne({
-      where: { orderId },
-    });
+    const order = await Orders.findOne({ where: { id: orderId } });
 
     if (!order) {
       ctx.throw(404, "Order not found");
     }
 
+    if (order.status !== ORDERSTATUS.CANCELLED) {
+      ctx.status = 400;
+      ctx.body = { status: false, message: "Order must be cancelled before refund" };
+      return;
+    }
+
     const transaction: any = await Transaction.findOne({
-      where: { orderId, status: PAYMEMENTSTATUS.SUCCESS },
+      where: { orderId:order.orderId, status: PAYMEMENTSTATUS.SUCCESS },
     });
 
     if (!transaction) {
       ctx.throw(404, "Transaction not found");
     }
 
+    if (transaction.status === PAYMEMENTSTATUS.REFUNDED) {
+      ctx.status = 400;
+      ctx.body = { status: false, message: "Transaction already refunded" };
+      return;
+    }
+
+    if (!refundAmount || refundAmount <= 0) {
+      ctx.status = 400;
+      ctx.body = { status: false, message: "Invalid refund amount" };
+      return;
+    }
+
+    if (refundAmount > transaction.amount) {
+      ctx.status = 400;
+      ctx.body = { status: false, message: "Refund amount exceeds transaction amount" };
+      return;
+    }
+
     const refund = await razorpay.payments.refund(transaction.paymentId, {
-      amount: transaction.amount * 100,
+      amount: refundAmount * 100,
       speed: "normal",
     });
 
     transaction.status = PAYMEMENTSTATUS.REFUNDED;
+    transaction.refundId = refund.id;
+    transaction.refundAmount = refundAmount;
     await transaction.save();
-
-    order.status = ORDERSTATUS.CANCELLED;
-    await order.save();
 
     ctx.status = 200;
     ctx.body = {
@@ -475,10 +499,8 @@ const razorpayWebhook = async (ctx: Context) => {
       status: PAYMEMENTSTATUS.SUCCESS,
       amount: amount.toString(),
     });
-
   }
   if (event === "payment.refunded") {
-
     const payment = body.payload.payment.entity;
 
     await Transaction.update(
@@ -504,6 +526,84 @@ const razorpayWebhook = async (ctx: Context) => {
   ctx.body = { success: true };
 };
 
+//Cancel order api
+const cancelOrder = async (ctx: Context) => {
+  try {
+    const { id } = ctx.params;
+
+    const order: any = await Orders.findOne({ where: { id } });
+
+    if (!order) {
+      ctx.status = 404;
+      ctx.body = { status: false, message: "Order not found" };
+      return;
+    }
+
+    if (order.status !== ORDERSTATUS.INPROGRESS) {
+      ctx.status = 400;
+      ctx.body = {
+        status: false,
+        message: "Order cannot be canceled in current status",
+      };
+      return;
+    }
+
+    const createdAt = moment(order.createdAt);
+    const now = moment();
+    const diffInHours = now.diff(createdAt, "hours");
+
+    let refundPercentage = 0;
+    let refundable = false;
+
+    if (diffInHours <= 24) {
+      refundPercentage = 0;
+      refundable = false;
+    } else if (diffInHours <= 48) {
+      refundPercentage = 60;
+      refundable = true;
+    } else {
+      refundPercentage = 100;
+      refundable = true;
+    }
+
+    if (!refundable) {
+      ctx.status = 400;
+      ctx.body = {
+        status: false,
+        message:
+          "Order cannot be canceled because it is within 24 hours and is non-refundable",
+      };
+      return;
+    }
+
+    const refundAmount = (Number(order.totalAmount) * refundPercentage) / 100;
+
+    // ✅ Update order to CANCELLED only if refundable
+    await Orders.update(
+      {
+        status: ORDERSTATUS.CANCELLED,
+      },
+      { where: { id } }
+    );
+
+    ctx.body = {
+      status: true,
+      message: "Order canceled successfully. Refund is available.",
+      data: {
+        refundable,
+        refundPercentage,
+        refundAmount,
+        refundStatus: "PENDING", // Refund yet to be processed
+      },
+    };
+  } catch (error) {
+    console.error(error);
+    ctx.status = 500;
+    ctx.body = { status: false, message: "Something went wrong" };
+  }
+};
+
+
 export = {
   getAllOrder,
   addOrder,
@@ -512,4 +612,5 @@ export = {
   getUsersOrder,
   razorpayWebhook,
   getDeliveryCharge,
+  cancelOrder,
 };

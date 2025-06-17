@@ -79,7 +79,7 @@ router.put("/update/:id", userAuth, controller.updateStore);
 /**
  * @swagger
  * /store/delete/{id}:
- *   put:
+ *   delete:
  *     summary: Delete  store
  *     tags: [Store]
  *     security:
@@ -98,13 +98,13 @@ router.put("/update/:id", userAuth, controller.updateStore);
  *       404:
  *         description: Store not found
  */
-router.put("/delete/:id", userAuth, controller.deleteStore);
+router.delete("/delete/:id", userAuth, controller.deleteStore);
 
 // Get Store
 /**
  * @swagger
  * /store/get:
- *   put:
+ *   get:
  *     summary: Get store
  *     tags: [Store]
  *     security:
@@ -115,6 +115,6 @@ router.put("/delete/:id", userAuth, controller.deleteStore);
  *       404:
  *         description: Store not found
  */
-router.put("/get", userAuth, controller.getStore);
+router.get("/get", userAuth, controller.getStore);
 
 export default router;
