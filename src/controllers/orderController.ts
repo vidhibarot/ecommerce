@@ -52,7 +52,7 @@ const razorpay = new Razorpay({
 
 const secret: any = process.env.RAZORPAY_SECRET;
 
-//Add Order Data
+// Add Order Data
 const addOrder = async (ctx: Context) => {
   try {
     const { products, customerName, email, phoneno, address, paymentMethod } =
@@ -174,7 +174,7 @@ const addOrder = async (ctx: Context) => {
   }
 };
 
-//Gell All Order Data
+//Get All Order Data
 const getAllOrder = async (ctx: Context) => {
   try {
     const findOrderData = await Orders.findAll({
@@ -253,7 +253,7 @@ const getAllOrder = async (ctx: Context) => {
   }
 };
 
-//Payment Refund
+// Payment Refund
 const refundPayment = async (ctx: Context) => {
   const { orderId } = ctx.params;
   const { refundAmount } = ctx.request.body as any;
@@ -267,12 +267,15 @@ const refundPayment = async (ctx: Context) => {
 
     if (order.status !== ORDERSTATUS.CANCELLED) {
       ctx.status = 400;
-      ctx.body = { status: false, message: "Order must be cancelled before refund" };
+      ctx.body = {
+        status: false,
+        message: "Order must be cancelled before refund",
+      };
       return;
     }
 
     const transaction: any = await Transaction.findOne({
-      where: { orderId:order.orderId, status: PAYMEMENTSTATUS.SUCCESS },
+      where: { orderId: order.orderId, status: PAYMEMENTSTATUS.SUCCESS },
     });
 
     if (!transaction) {
@@ -293,7 +296,10 @@ const refundPayment = async (ctx: Context) => {
 
     if (refundAmount > transaction.amount) {
       ctx.status = 400;
-      ctx.body = { status: false, message: "Refund amount exceeds transaction amount" };
+      ctx.body = {
+        status: false,
+        message: "Refund amount exceeds transaction amount",
+      };
       return;
     }
 
@@ -315,16 +321,30 @@ const refundPayment = async (ctx: Context) => {
     };
   } catch (error: any) {
     console.error("Refund error:", error);
+
+    if (
+      error?.error?.reason === "BAD_REQUEST_ERROR" &&
+      error?.error?.description?.includes("already refunded")
+    ) {
+      ctx.status = 409;
+      ctx.body = {
+        success: false,
+        message: "This payment has already been refunded",
+      };
+      return;
+    }
+
     ctx.status = 500;
     ctx.body = {
       success: false,
       message: "Refund failed",
-      error: error?.message || "Internal Server Error",
+      error:
+        error?.message || error?.error?.description || "Internal Server Error",
     };
   }
 };
 
-//Verify Payment
+// Verify Payment
 const verifyPayment = async (ctx: any) => {
   const { orderId, paymentId, transactionId, amount } = ctx.request.body;
 
@@ -526,7 +546,7 @@ const razorpayWebhook = async (ctx: Context) => {
   ctx.body = { success: true };
 };
 
-//Cancel order api
+// Cancel order api
 const cancelOrder = async (ctx: Context) => {
   try {
     const { id } = ctx.params;
@@ -602,7 +622,6 @@ const cancelOrder = async (ctx: Context) => {
     ctx.body = { status: false, message: "Something went wrong" };
   }
 };
-
 
 export = {
   getAllOrder,

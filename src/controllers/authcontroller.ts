@@ -113,8 +113,6 @@ const login = async (ctx: Context) => {
 
     var date = new Date();
 
-    console.log("newwww", date, new Date(), existingUser.id);
-
     await User.update({ updatedAt: date }, { where: { id: existingUser.id } });
 
     // Generate token
@@ -418,21 +416,23 @@ const getUserById = async (ctx: Context) => {
       raw: false,
       nest: true,
       attributes: ["id", "name", "roleId", "email", "password"],
-      // include: [
-      //   {
-      //     model: Role,
-      //     as: "role_info",
-      //     attributes: ["name"],
-      //   },
-      // ],
     });
 
     if (getUserInfo) {
+      const role = await Role.findOne({
+        where: { id: getUserInfo?.roleId },
+        attributes: ["id", "name"],
+        raw: true,
+      });
+
       ctx.status = 200;
       ctx.body = {
         status: true,
         message: "User retrieved successfully",
-        data: getUserInfo,
+        data: {
+          ...getUserInfo,
+          roleName: role?.name || null,
+        },
       };
     } else {
       ctx.status = 400;

@@ -14,6 +14,10 @@ import cartItemsRoutes from "./routes/cartItems";
 import userPreferenceRoutes from "./routes/userPreference"
 import dashBoardRoutes from "./routes/dashboard"
 import storeRoutes from "./routes/store"
+import roleRoutes from "./routes/role"
+import paymentMethodsRoutes from "./routes/paymentMethod"
+import shippingMethodsRoutes from "./routes/shippingMethods"
+import taxMethodsRoutes from "./routes/taxMethods"
 import { db } from './models/index';
 import swaggerJSDoc from 'swagger-jsdoc';
 import path from 'path';
@@ -89,6 +93,10 @@ app.use(cartItemsRoutes.routes()).use(cartItemsRoutes.allowedMethods());
 app.use(userPreferenceRoutes.routes()).use(userPreferenceRoutes.allowedMethods());
 app.use(dashBoardRoutes.routes()).use(dashBoardRoutes.allowedMethods());
 app.use(storeRoutes.routes()).use(stateRoutes.allowedMethods());
+app.use(roleRoutes.routes()).use(roleRoutes.allowedMethods());
+app.use(paymentMethodsRoutes.routes()).use(paymentMethodsRoutes.allowedMethods());
+app.use(shippingMethodsRoutes.routes()).use(shippingMethodsRoutes.allowedMethods());
+app.use(taxMethodsRoutes.routes()).use(taxMethodsRoutes.allowedMethods());
 
 const PORT = process.env.PORT || 5000;
 

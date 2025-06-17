@@ -44,43 +44,40 @@ const getUserProfile = async (ctx: Context) => {
 
     if (!id) {
       ctx.status = 400;
-      ctx.body = {
-        status: false,
-        message: "id not found!",
-      };
+      ctx.body = { status: false, message: "User ID not found!" };
       return;
     }
 
-    const getUserInfo = await User.findOne({
+    const userInfo = await User.findOne({
       where: { id },
-      raw: false,
-      nest: true,
-      attributes: ["id", "name", "roleId", "email", "password"],
-      include: [
-        {
-          model: Role,
-          as: "role_info",
-          attributes: ["name"],
-        },
-      ],
+      attributes: ["id", "name", "roleId", "email"],
+      raw: true,
     });
 
-    if (getUserInfo) {
-      ctx.status = 200;
-      ctx.body = {
-        status: true,
-        message: "User retrieved successfully",
-        data: getUserInfo,
-      };
-    } else {
-      ctx.status = 400;
-      ctx.body = {
-        status: true,
-        message: "No user found with the provided ID",
-      };
+    if (!userInfo) {
+      ctx.status = 404;
+      ctx.body = { status: false, message: "User not found" };
+      return;
     }
+
+    // ✅ Find role separately based on roleId
+    const role = await Role.findOne({
+      where: { id: userInfo.roleId },
+      attributes: ["name"],
+      raw: true,
+    });
+
+    ctx.status = 200;
+    ctx.body = {
+      status: true,
+      message: "User retrieved successfully",
+      data: {
+        ...userInfo,
+        roleName: role?.name || null,
+      },
+    };
   } catch (error) {
-    console.error("err -> ", error);
+    console.error("Error:", error);
     ctx.status = 500;
     ctx.body = {
       status: false,
@@ -89,6 +86,7 @@ const getUserProfile = async (ctx: Context) => {
     };
   }
 };
+
 
 //Update User Profile
 const updateUserProfile = async (ctx: Context) => {

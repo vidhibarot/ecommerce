@@ -1,7 +1,6 @@
 import { Context } from "koa";
-import City from "../models/city";
 import store from "../models/store";
-import { STATUS, USERSTATUS } from "../config/constant";
+import { USERSTATUS } from "../config/constant";
 
 interface storeAttributes {
   id: number;
