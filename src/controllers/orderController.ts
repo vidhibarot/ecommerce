@@ -9,6 +9,7 @@ import { ORDERSTATUS, PAYMEMENTSTATUS } from "../config/constant";
 import { createHmac } from "crypto";
 import OrderItems from "../models/orderItems";
 import moment from "moment";
+import ShippingMethods from "../models/shippingMethods";
 const Razorpay = require("razorpay");
 
 const razorpayInstance = new Razorpay({
@@ -35,6 +36,7 @@ interface orderAttributes {
   totalAmount?: number;
   status?: string;
   paymentMethod: string;
+  shippingMethodId:number;
 }
 
 const status = {
@@ -55,7 +57,7 @@ const secret: any = process.env.RAZORPAY_SECRET;
 // Add Order Data
 const addOrder = async (ctx: Context) => {
   try {
-    const { products, customerName, email, phoneno, address, paymentMethod } =
+    const { products, customerName, email, phoneno, address, paymentMethod,shippingMethodId } =
       ctx.request.body as orderAttributes;
     if (!products || !Array.isArray(products) || products.length === 0) {
       ctx.status = 400;
@@ -86,32 +88,63 @@ const addOrder = async (ctx: Context) => {
       0
     );
 
-    const deliveryChargeData = await DeliveryCharges.findOne({
+    // const deliveryChargeData = await DeliveryCharges.findOne({
+    //   where: {
+    //     city: address.city,
+    //     zipcode: address.zipcode,
+    //     status: STATUSDATA.ACTIVE,
+    //   },
+    // });
+
+    // if (!deliveryChargeData) {
+    //   ctx.status = 400;
+    //   ctx.body = {
+    //     status: false,
+    //     message: "Delivery not available for the specified city or zipcode.",
+    //   };
+    //   return;
+    // }
+
+    // let deliveryCharges = 0;
+    // const minOrderValue = parseFloat(deliveryChargeData.minOrder);
+    // const chargeValue = parseFloat(deliveryChargeData.charge);
+
+    // if (initialTotal < minOrderValue) {
+    //   deliveryCharges = chargeValue;
+    // }
+    // const gstAmont = initialTotal * 0.18;
+    // const totalAmount = initialTotal + deliveryCharges + gstAmont;
+    // Fetch shipping method
+    const shippingMethod = await ShippingMethods.findOne({
       where: {
-        city: address.city,
-        zipcode: address.zipcode,
+        id: shippingMethodId,
         status: STATUSDATA.ACTIVE,
       },
     });
 
-    if (!deliveryChargeData) {
+    if (!shippingMethod) {
       ctx.status = 400;
       ctx.body = {
         status: false,
-        message: "Delivery not available for the specified city or zipcode.",
+        message: "Invalid or inactive shipping method.",
       };
       return;
     }
 
-    let deliveryCharges = 0;
-    const minOrderValue = parseFloat(deliveryChargeData.minOrder);
-    const chargeValue = parseFloat(deliveryChargeData.charge);
+    const minOrder = shippingMethod.minOrder !== null ? Number(shippingMethod.minOrder) : 0;
+    const deliveryChargeAmount = shippingMethod.amount !== null ? Number(shippingMethod.amount) : 0;
 
-    if (initialTotal < minOrderValue) {
-      deliveryCharges = chargeValue;
+    let deliveryCharges = deliveryChargeAmount;
+
+    // Free shipping logic
+    if (minOrder > 0 && initialTotal >= minOrder) {
+      deliveryCharges = 0;
     }
-    const gstAmont = initialTotal * 0.18;
-    const totalAmount = initialTotal + deliveryCharges + gstAmont;
+    const gstAmount = initialTotal * 0.18;
+    console.log("gggg",gstAmount)
+
+    const totalAmount = initialTotal + deliveryCharges + gstAmount;
+
 
     let razorpayOrder = null;
 
@@ -440,42 +473,109 @@ const getUsersOrder = async (ctx: Context) => {
 };
 
 // Get Delivery charge data
+// const getDeliveryCharge = async (ctx: Context) => {
+//   try {
+//     const { city, zipcode, totalAmount } = ctx.request.body as any;
+
+//     if (!city || !zipcode || totalAmount == null) {
+//       ctx.status = 400;
+//       ctx.body = {
+//         status: false,
+//         message: "City, Zipcode, and totalAmount are required",
+//       };
+//       return;
+//     }
+
+//     const deliveryChargeData: any = await DeliveryCharges.findOne({
+//       where: {
+//         city,
+//         zipcode,
+//         status: USERSTATUS.ACTIVE,
+//       },
+//     });
+
+//     const isFreeDelivery = totalAmount >= deliveryChargeData.minOrder;
+//     const deliveryCharge = isFreeDelivery ? 0 : deliveryChargeData.charge;
+
+//     const message = isFreeDelivery
+//       ? `Congratulations! You have free delivery for orders above ₹${deliveryChargeData.minOrder}`
+//       : `Add ₹${
+//           deliveryChargeData.minOrder - totalAmount
+//         } more to get free delivery`;
+
+//     ctx.status = 200;
+//     ctx.body = {
+//       status: true,
+//       deliveryCharge,
+//       isFreeDelivery,
+//       minOrderAmount: deliveryChargeData.minOrder,
+//       totalAmount,
+//       message,
+//     };
+//   } catch (error: any) {
+//     ctx.status = 500;
+//     ctx.body = {
+//       status: false,
+//       message: error.message || "Internal Server Error",
+//     };
+//   }
+// };
 const getDeliveryCharge = async (ctx: Context) => {
   try {
-    const { city, zipcode, totalAmount } = ctx.request.body as any;
+    const { Id, totalAmount } = ctx.request.body as {
+      Id: number;
+      totalAmount: number;
+    };
 
-    if (!city || !zipcode || totalAmount == null) {
+    if (!Id || totalAmount == null) {
       ctx.status = 400;
       ctx.body = {
         status: false,
-        message: "City, Zipcode, and totalAmount are required",
+        message: "Id and totalAmount are required",
       };
       return;
     }
 
-    const deliveryChargeData: any = await DeliveryCharges.findOne({
+    const shippingMethod = await ShippingMethods.findOne({
       where: {
-        city,
-        zipcode,
+        id: Id,
         status: USERSTATUS.ACTIVE,
       },
     });
 
-    const isFreeDelivery = totalAmount >= deliveryChargeData.minOrder;
-    const deliveryCharge = isFreeDelivery ? 0 : deliveryChargeData.charge;
+    if (!shippingMethod) {
+      ctx.status = 404;
+      ctx.body = {
+        status: false,
+        message: "Shipping method not found or inactive",
+      };
+      return;
+    }
 
-    const message = isFreeDelivery
-      ? `Congratulations! You have free delivery for orders above ₹${deliveryChargeData.minOrder}`
-      : `Add ₹${
-          deliveryChargeData.minOrder - totalAmount
-        } more to get free delivery`;
+    const minOrder = shippingMethod.minOrder !== null ? Number(shippingMethod.minOrder) : 0;
+    const amount = shippingMethod.amount !== null ? Number(shippingMethod.amount) : 0;
+
+    let deliveryCharge = amount;
+    let isFreeDelivery = false;
+    let message = "";
+
+    if (minOrder > 0) {
+      isFreeDelivery = totalAmount >= minOrder;
+      deliveryCharge = isFreeDelivery ? 0 : amount;
+
+      message = isFreeDelivery
+        ? `Congratulations! You have free delivery for orders above ₹${minOrder}`
+        : `Add ₹${minOrder - totalAmount} more to get free delivery`;
+    } else {
+      message = `Delivery charge for this method is ₹${deliveryCharge}`;
+    }
 
     ctx.status = 200;
     ctx.body = {
       status: true,
       deliveryCharge,
       isFreeDelivery,
-      minOrderAmount: deliveryChargeData.minOrder,
+      minOrderAmount: minOrder,
       totalAmount,
       message,
     };

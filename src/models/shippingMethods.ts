@@ -34,7 +34,8 @@ ShippingMethods.init(
     },
     minOrder: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
+      defaultValue:0
     },
     amount: {
       type: DataTypes.STRING,

@@ -109,6 +109,7 @@ const updateCategoryData = async (ctx: Context) => {
     await category.save();
 
     if (Array.isArray(subcategory)) {
+      console.log("innnn",subcategory)
       await SubCategory.destroy({ where: { categoryId: id } });
 
       if (subcategory.length > 0) {

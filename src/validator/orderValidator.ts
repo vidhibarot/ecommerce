@@ -16,7 +16,7 @@ export const validateCreateOrder = async (ctx: any, next: any) => {
     customerName: Joi.string().required(),
     email: Joi.string().email().required(),
     phoneno: Joi.string().required(),
-
+    shippingMethodId: Joi.number().required(),
     address: Joi.object({
       type: Joi.string().required(),
       address: Joi.string().required(),

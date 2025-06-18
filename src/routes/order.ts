@@ -37,6 +37,8 @@ import { validateCreateOrder } from "../validator/orderValidator";
  *                 type: string
  *               phoneno:
  *                 type: string
+ *               shippingMethodId:
+ *                 type: integer
  *               address:
  *                 type: object
  *                 properties:
@@ -178,14 +180,11 @@ router.post("/razorpay-webhook", controller.razorpayWebhook);
  *           schema:
  *             type: object
  *             required:
- *               - city
- *               - zipcode
+ *               - Id
  *               - totalAmount
  *             properties:
- *               city:
- *                 type: string
- *               zipcode:
- *                 type: string
+ *               Id:
+ *                 type: integer
  *               totalAmount:
  *                 type: integer
  *     responses:
