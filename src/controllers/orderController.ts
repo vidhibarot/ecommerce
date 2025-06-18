@@ -57,7 +57,6 @@ const addOrder = async (ctx: Context) => {
   try {
     const { products, customerName, email, phoneno, address, paymentMethod } =
       ctx.request.body as orderAttributes;
-
     if (!products || !Array.isArray(products) || products.length === 0) {
       ctx.status = 400;
       ctx.body = {
@@ -111,8 +110,8 @@ const addOrder = async (ctx: Context) => {
     if (initialTotal < minOrderValue) {
       deliveryCharges = chargeValue;
     }
-
-    const totalAmount = initialTotal + deliveryCharges;
+    const gstAmont = initialTotal * 0.18;
+    const totalAmount = initialTotal + deliveryCharges + gstAmont;
 
     let razorpayOrder = null;
 
@@ -347,7 +346,6 @@ const refundPayment = async (ctx: Context) => {
 // Verify Payment
 const verifyPayment = async (ctx: any) => {
   const { orderId, paymentId, transactionId, amount } = ctx.request.body;
-
   if (!orderId || !paymentId || !transactionId || !amount) {
     ctx.status = 400;
     ctx.body = { success: false, message: "Missing payment details." };

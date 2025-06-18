@@ -197,6 +197,7 @@ const getCartTotalSummary = async (ctx: Context) => {
     let totalWithoutDiscount = 0;
     let totalDiscount = 0;
     let totalAfterDiscount = 0;
+    let gstAmount =0;
 
     const cartDetails = cartItems.map((item: any) => {
       const product = item.Product;
@@ -214,6 +215,7 @@ const getCartTotalSummary = async (ctx: Context) => {
       totalWithoutDiscount += lineTotalWithoutDiscount;
       totalDiscount += lineDiscount;
       totalAfterDiscount += lineTotalAfterDiscount;
+      gstAmount = totalAfterDiscount*0.18
 
       return {
         productId: product.id,
@@ -234,6 +236,8 @@ const getCartTotalSummary = async (ctx: Context) => {
         totalWithoutDiscount,
         totalDiscount,
         totalAfterDiscount,
+        gstAmount,
+
       },
       // cartDetails,
     };

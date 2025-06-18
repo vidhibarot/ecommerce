@@ -195,7 +195,6 @@ const getUserPreferenceData = async (ctx: Context) => {
 
     const preference = await UserPreference.findOne({ where: { userId } });
 
-    console.log("preferencepreference",preference)
 
     if (!preference) {
       ctx.status = 404;

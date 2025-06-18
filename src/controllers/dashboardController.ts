@@ -121,7 +121,6 @@ const getDashboardData = async (ctx: Context) => {
       thisMonthOrdersCount > 0
         ? (totalRevenue / thisMonthOrdersCount).toFixed(2)
         : "0.00";
-    console.log("vvvvvvv", avgOrderValue);
 
     // Last month average order value
     const lastMonthAvgOrderValue =
@@ -161,14 +160,12 @@ const getDashboardData = async (ctx: Context) => {
       raw: true,
     });
 
-    console.log("monthlySales", monthlySales);
 
     const formattedMonthlySales = monthlySales.map((item: any) => ({
       month: moment(item.month, "YYYY-MM").format("MMM YYYY"),
       totalSales: Number(item.totalSales || 0),
     }));
 
-    console.log("formated monthaly slaesssss...", formattedMonthlySales);
 
     const topProducts = await OrderItems.findAll({
       attributes: ["productId", [fn("SUM", col("quantity")), "totalSold"]],

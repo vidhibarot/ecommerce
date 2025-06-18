@@ -1,6 +1,7 @@
 import { Context } from "koa";
 import { Category } from "../models/category";
 import SubCategory from "../models/subCategory";
+import { Op } from "sequelize";
 
 interface categoryAttributes {
   id?: number;
@@ -69,7 +70,6 @@ const updateCategoryData = async (ctx: Context) => {
   try {
     const id = ctx.params.id;
     const { name, subcategory } = ctx.request.body as categoryAttributes;
-    console.log("id nammammammamma", id, ctx.params.id);
     if (!id || !name) {
       ctx.status = 400;
       ctx.body = {
@@ -90,7 +90,12 @@ const updateCategoryData = async (ctx: Context) => {
     }
 
     // Check for duplicate name
-    const duplicate = await Category.findOne({ where: { name } });
+    const duplicate = await Category.findOne({
+      where: {
+        name,
+        id: { [Op.ne]: id }, // Exclude this id
+      },
+    });
     if (duplicate && duplicate.id !== id) {
       ctx.status = 409;
       ctx.body = {

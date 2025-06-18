@@ -178,7 +178,6 @@ const getAllCustomers = async (ctx: Context) => {
     const repeatPurchaseRate = totalCustomers
       ? ((repeatCustomersCount / totalCustomers) * 100).toFixed(2)
       : "0.00";
-    console.log("repeatPurchaseRate", repeatPurchaseRate);
 
     const enrichedCustomers = await Promise.all(
       findCustomers.rows.map(async (customer: any) => {

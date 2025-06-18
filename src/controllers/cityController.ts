@@ -24,7 +24,6 @@ const getAllCity = async (ctx: Context) => {
 
 // Get City by stateId
 const getCityByStateId = async (ctx: Context) => {
-    console.log("im contrilerrerrrerer",ctx.params.stateId)
   const stateId = ctx.params.stateId;
 
   try {
