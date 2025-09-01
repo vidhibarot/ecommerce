@@ -1,0 +1,129 @@
+import Router from "koa-router";
+
+const controller = require("../controllers/userPreferneceController");
+const router = new Router({ prefix: "/userpreference" });
+import userAuth from "../middleware/auth";
+
+
+//Add UserPreference Data 
+/**
+ * @swagger
+ * /userpreference/add:
+ *   post:
+ *     summary: Add a user preference address
+ *     tags: [userpreference]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               type:
+ *                 type: string
+ *               address:
+ *                 type: string
+ *               country:
+ *                 type: string
+ *               city:
+ *                 type: string
+ *               state:
+ *                 type: string
+ *               zipcode:
+ *                 type: string
+ *             required:
+ *               - type
+ *               - address
+ *               - country
+ *               - city
+ *               - state
+ *               - zipcode
+ *     responses:
+ *       201:
+ *         description: Address saved successfully
+ */
+router.post("/add",userAuth,controller.addUserPreferenceData);
+
+//Update UserPreference Data 
+/**
+ * @swagger
+ * /userpreference/update:
+ *   put:
+ *     summary: update a user preference address
+ *     tags: [userpreference]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               type:
+ *                 type: string
+ *               address_id:
+ *                 type: string
+ *               address:
+ *                 type: string
+ *               country:
+ *                 type: string
+ *               city:
+ *                 type: string
+ *               state:
+ *                 type: string
+ *               zipcode:
+ *                 type: string
+ *             required:
+ *               - type
+ *               - address
+ *               - country
+ *               - city
+ *               - state
+ *               - zipcode
+ *     responses:
+ *       201:
+ *         description: Address saved successfully
+ */
+router.put("/update",userAuth,controller.updateUserPreferenceData);
+
+// Delete UserPreference Address
+/**
+ * @swagger
+ * /userpreference/delete:
+ *   delete:
+ *     summary: Delete a specific address from user preferences
+ *     tags: [userpreference]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               address_id:
+ *                 type: string
+ *                 description: The ID of the address to delete
+ *             required:
+ *               - address_id
+ *     responses:
+ *       200:
+ *         description: Address deleted successfully
+ *       404:
+ *         description: Address not found
+ */
+router.delete("/delete", userAuth, controller.deleteUserAddress);
+
+// Get UserPreference Data by Logged-in User
+/**
+ * @swagger
+ * /userpreference/get:
+ *   get:
+ *     summary: Get user preference data for the logged-in user
+ *     tags: [userpreference]
+ *     responses:
+ *       200:
+ *         description: User preference data retrieved successfully
+ */
+router.get("/get", userAuth, controller.getUserPreferenceData);
+
+
+export default router;

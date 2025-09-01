@@ -1,15 +1,18 @@
-"use strict";
 import { Model, DataTypes } from "sequelize";
 import { sequelize } from "./index";
-import { Product } from "./product";
 import productImagesAttribute from "./interface/ProductImagesInterface";
+
 export class ProductImage
-  extends Model<productImagesAttribute, never>
+  extends Model<productImagesAttribute>
   implements productImagesAttribute
 {
   id!: number;
   productId!: number;
-  image!:string
+  image!: string;
+
+  static associate(db: any) {
+    ProductImage.belongsTo(db.Product, { foreignKey: "productId" });
+  }
 }
 
 ProductImage.init(
@@ -22,15 +25,15 @@ ProductImage.init(
     productId: {
       type: DataTypes.INTEGER,
     },
-    image:{
-     type: DataTypes.STRING,
-
-    }
+    image: {
+      type: DataTypes.STRING,
+    },
   },
   {
-    sequelize: sequelize,
+    sequelize,
     tableName: "ProductImages",
     modelName: "ProductImage",
   }
 );
-ProductImage.belongsTo(Product, { foreignKey: "productId" });
+
+export default ProductImage;

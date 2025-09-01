@@ -1,0 +1,733 @@
+import { Context } from "koa";
+import Orders from "../models/order";
+import Transaction from "../models/transaction";
+import Product from "../models/product";
+import DeliveryCharges from "../models/deliverycharges";
+import { PAYMENTMETHOD, STATUSDATA, USERSTATUS } from "../config/constant";
+import User from "../models/user";
+import { ORDERSTATUS, PAYMEMENTSTATUS } from "../config/constant";
+import { createHmac } from "crypto";
+import OrderItems from "../models/orderItems";
+import moment from "moment";
+import ShippingMethods from "../models/shippingMethods";
+const Razorpay = require("razorpay");
+
+const razorpayInstance = new Razorpay({
+  key_id: process.env.RAZORPAY_ID_KEY,
+  key_secret: process.env.RAZORPAY_SECRET,
+});
+
+interface orderAttributes {
+  products: {
+    productId: number;
+    quantity: number;
+    price: number;
+  }[];
+  userId?: number;
+  customerName: string;
+  email: string;
+  phoneno: string;
+  address: {
+    city: string;
+    zipcode: string;
+    [key: string]: any;
+  };
+  deliveryCharges?: number;
+  totalAmount?: number;
+  status?: string;
+  paymentMethod: string;
+  shippingMethodId:number;
+}
+
+const status = {
+  INPROGRESS: "Inprogress",
+  SHIPPED: "Shipped",
+  DELIVERD: "Delivered",
+  CANCELLED: "Cancelled",
+};
+
+// Initialize Razorpay instance
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_ID_KEY,
+  key_secret: process.env.RAZORPAY_SECRET,
+});
+
+const secret: any = process.env.RAZORPAY_SECRET;
+
+// Add Order Data
+const addOrder = async (ctx: Context) => {
+  try {
+    const { products, customerName, email, phoneno, address, paymentMethod,shippingMethodId } =
+      ctx.request.body as orderAttributes;
+    if (!products || !Array.isArray(products) || products.length === 0) {
+      ctx.status = 400;
+      ctx.body = {
+        status: false,
+        message: "No products found in the order.",
+      };
+      return;
+    }
+
+    const userData = await User.findOne({
+      where: {
+        id: ctx.state.user.id,
+        status: STATUSDATA.ACTIVE,
+      },
+    });
+
+    if (!userData) {
+      ctx.status = 403;
+      ctx.body = {
+        status: false,
+        message: "Your account is inactive or does not exist.",
+      };
+      return;
+    }
+    const initialTotal = products.reduce(
+      (sum, p) => sum + p.price * p.quantity,
+      0
+    );
+
+    // const deliveryChargeData = await DeliveryCharges.findOne({
+    //   where: {
+    //     city: address.city,
+    //     zipcode: address.zipcode,
+    //     status: STATUSDATA.ACTIVE,
+    //   },
+    // });
+
+    // if (!deliveryChargeData) {
+    //   ctx.status = 400;
+    //   ctx.body = {
+    //     status: false,
+    //     message: "Delivery not available for the specified city or zipcode.",
+    //   };
+    //   return;
+    // }
+
+    // let deliveryCharges = 0;
+    // const minOrderValue = parseFloat(deliveryChargeData.minOrder);
+    // const chargeValue = parseFloat(deliveryChargeData.charge);
+
+    // if (initialTotal < minOrderValue) {
+    //   deliveryCharges = chargeValue;
+    // }
+    // const gstAmont = initialTotal * 0.18;
+    // const totalAmount = initialTotal + deliveryCharges + gstAmont;
+    // Fetch shipping method
+    const shippingMethod = await ShippingMethods.findOne({
+      where: {
+        id: shippingMethodId,
+        status: STATUSDATA.ACTIVE,
+      },
+    });
+
+    if (!shippingMethod) {
+      ctx.status = 400;
+      ctx.body = {
+        status: false,
+        message: "Invalid or inactive shipping method.",
+      };
+      return;
+    }
+
+    const minOrder = shippingMethod.minOrder !== null ? Number(shippingMethod.minOrder) : 0;
+    const deliveryChargeAmount = shippingMethod.amount !== null ? Number(shippingMethod.amount) : 0;
+
+    let deliveryCharges = deliveryChargeAmount;
+
+    // Free shipping logic
+    if (minOrder > 0 && initialTotal >= minOrder) {
+      deliveryCharges = 0;
+    }
+    const gstAmount = initialTotal * 0.18;
+    console.log("gggg",gstAmount)
+
+    const totalAmount = initialTotal + deliveryCharges + gstAmount;
+
+
+    let razorpayOrder = null;
+
+    if (paymentMethod === PAYMENTMETHOD.ONLINE) {
+      const options = {
+        amount: totalAmount * 100,
+        currency: "INR",
+        receipt: `rcpt_${Date.now()}`,
+        payment_capture: 1,
+      };
+      razorpayOrder = await razorpayInstance.orders.create(options);
+    }
+
+    const order: any = await Orders.create({
+      orderId: razorpayOrder ? razorpayOrder.id : `cod_${Date.now()}`,
+      userId: ctx.state.user.id,
+      customerName,
+      email,
+      phoneno,
+      address: JSON.stringify(address),
+      deliveryCharges,
+      totalAmount,
+      status: ORDERSTATUS.INPROGRESS,
+    });
+
+    for (const item of products) {
+      await OrderItems.create({
+        orderId: order.id,
+        productId: item.productId,
+        quantity: item.quantity,
+        price: item.price,
+      });
+    }
+
+    if (paymentMethod === PAYMENTMETHOD.COD) {
+      await Transaction.create({
+        orderId: order.orderId,
+        paymentId: "",
+        transationId: "",
+        paymentMethod: PAYMENTMETHOD.COD,
+        status: PAYMEMENTSTATUS.INPROGRESS,
+        amount: totalAmount.toString(),
+      });
+    }
+
+    ctx.status = 201;
+    ctx.body = {
+      status: true,
+      message: "Order created successfully",
+      data: paymentMethod === PAYMENTMETHOD.COD ? order : razorpayOrder,
+    };
+  } catch (error) {
+    console.error("Add Order Error: ", error);
+    ctx.status = 400;
+    ctx.body = {
+      status: false,
+      message: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+};
+
+//Get All Order Data
+const getAllOrder = async (ctx: Context) => {
+  try {
+    const findOrderData = await Orders.findAll({
+      include: [
+        {
+          model: OrderItems,
+          include: [
+            {
+              model: Product,
+            },
+          ],
+        },
+      ],
+    });
+
+    const statusCounts = findOrderData.reduce(
+      (acc, order) => {
+        const orderStatus = order.status;
+        if (orderStatus === status.INPROGRESS) acc.inprogress++;
+        if (orderStatus === status.SHIPPED) acc.shipped++;
+        if (orderStatus === status.DELIVERD) acc.delivered++;
+        if (orderStatus === status.CANCELLED) acc.cancelled++;
+        acc.total++;
+        return acc;
+      },
+      {
+        total: 0,
+        inprogress: 0,
+        shipped: 0,
+        delivered: 0,
+        cancelled: 0,
+      }
+    );
+    const userIds = [...new Set(findOrderData.map((order) => order.userId))];
+
+    const users = await User.findAll({
+      where: { id: userIds },
+    });
+
+    const userMap: any = users.reduce((acc: any, user) => {
+      acc[user.id] = user;
+      return acc;
+    }, {});
+    const orderIds = findOrderData.map((order) => order.orderId);
+
+    const transactions = await Transaction.findAll({
+      where: { orderId: orderIds },
+    });
+
+    const transactionMap: any = transactions.reduce((acc: any, tx: any) => {
+      acc[tx.orderId] = tx;
+      return acc;
+    }, {});
+
+    const ordersWithUser = findOrderData.map((order) => ({
+      ...order.toJSON(),
+      transaction: transactionMap[order.orderId] || null,
+      user: userMap[order.userId] || null,
+    }));
+
+    ctx.status = 200;
+    ctx.body = {
+      status: true,
+      message: "All Order Fetched",
+      data: ordersWithUser,
+      count: statusCounts,
+      totalOrders: findOrderData.length,
+    };
+  } catch (error) {
+    console.error("err -> ", error);
+    ctx.status = 400;
+    ctx.body = {
+      status: false,
+      message: error instanceof Error ? error.message : "Unknown Error",
+    };
+  }
+};
+
+// Payment Refund
+const refundPayment = async (ctx: Context) => {
+  const { orderId } = ctx.params;
+  const { refundAmount } = ctx.request.body as any;
+
+  try {
+    const order = await Orders.findOne({ where: { id: orderId } });
+
+    if (!order) {
+      ctx.throw(404, "Order not found");
+    }
+
+    if (order.status !== ORDERSTATUS.CANCELLED) {
+      ctx.status = 400;
+      ctx.body = {
+        status: false,
+        message: "Order must be cancelled before refund",
+      };
+      return;
+    }
+
+    const transaction: any = await Transaction.findOne({
+      where: { orderId: order.orderId, status: PAYMEMENTSTATUS.SUCCESS },
+    });
+
+    if (!transaction) {
+      ctx.throw(404, "Transaction not found");
+    }
+
+    if (transaction.status === PAYMEMENTSTATUS.REFUNDED) {
+      ctx.status = 400;
+      ctx.body = { status: false, message: "Transaction already refunded" };
+      return;
+    }
+
+    if (!refundAmount || refundAmount <= 0) {
+      ctx.status = 400;
+      ctx.body = { status: false, message: "Invalid refund amount" };
+      return;
+    }
+
+    if (refundAmount > transaction.amount) {
+      ctx.status = 400;
+      ctx.body = {
+        status: false,
+        message: "Refund amount exceeds transaction amount",
+      };
+      return;
+    }
+
+    const refund = await razorpay.payments.refund(transaction.paymentId, {
+      amount: refundAmount * 100,
+      speed: "normal",
+    });
+
+    transaction.status = PAYMEMENTSTATUS.REFUNDED;
+    transaction.refundId = refund.id;
+    transaction.refundAmount = refundAmount;
+    await transaction.save();
+
+    ctx.status = 200;
+    ctx.body = {
+      success: true,
+      message: "Refund successful and order cancelled",
+      refund,
+    };
+  } catch (error: any) {
+    console.error("Refund error:", error);
+
+    if (
+      error?.error?.reason === "BAD_REQUEST_ERROR" &&
+      error?.error?.description?.includes("already refunded")
+    ) {
+      ctx.status = 409;
+      ctx.body = {
+        success: false,
+        message: "This payment has already been refunded",
+      };
+      return;
+    }
+
+    ctx.status = 500;
+    ctx.body = {
+      success: false,
+      message: "Refund failed",
+      error:
+        error?.message || error?.error?.description || "Internal Server Error",
+    };
+  }
+};
+
+// Verify Payment
+const verifyPayment = async (ctx: any) => {
+  const { orderId, paymentId, transactionId, amount } = ctx.request.body;
+  if (!orderId || !paymentId || !transactionId || !amount) {
+    ctx.status = 400;
+    ctx.body = { success: false, message: "Missing payment details." };
+    return;
+  }
+
+  const expectedSignature = createHmac("sha256", secret)
+    .update(`${orderId}|${paymentId}`)
+    .digest("hex");
+
+  const status =
+    expectedSignature === transactionId
+      ? PAYMEMENTSTATUS.SUCCESS
+      : PAYMEMENTSTATUS.FAILED;
+
+  await Transaction.create({
+    orderId,
+    paymentId,
+    transationId: transactionId,
+    paymentMethod: "RAZORPAY",
+    status,
+    amount,
+  });
+
+  const orderStatus =
+    status === PAYMEMENTSTATUS.SUCCESS
+      ? ORDERSTATUS.INPROGRESS
+      : ORDERSTATUS.FAILED;
+
+  await Orders.update({ status: orderStatus }, { where: { orderId } });
+
+  if (status === PAYMEMENTSTATUS.SUCCESS) {
+    ctx.body = { success: true, message: "Payment verified successfully!" };
+  } else {
+    ctx.status = 400;
+    ctx.body = {
+      success: false,
+      message: "Signature mismatch. Verification failed.",
+    };
+  }
+};
+
+// Get User Orders Data
+const getUsersOrder = async (ctx: Context) => {
+  try {
+    const userId = ctx.state.user.id;
+
+    const findOrderData = await Orders.findAll({
+      where: { userId },
+      include: [
+        {
+          model: OrderItems,
+          include: [
+            {
+              model: Product,
+            },
+          ],
+        },
+      ],
+    });
+
+    const orderIds = findOrderData.map((order) => order.orderId);
+
+    const transactions = await Transaction.findAll({
+      where: { orderId: orderIds },
+    });
+
+    const transactionMap: any = transactions.reduce((acc: any, tx: any) => {
+      acc[tx.orderId] = tx;
+      return acc;
+    }, {});
+
+    const ordersWithUser = findOrderData.map((order) => ({
+      ...order.toJSON(),
+      transaction: transactionMap[order.orderId] || null,
+    }));
+
+    ctx.status = 200;
+    ctx.body = {
+      status: true,
+      message: "All Order Fetched",
+      data: ordersWithUser,
+    };
+  } catch (error) {
+    console.error("err -> ", error);
+    ctx.status = 400;
+    ctx.body = {
+      status: false,
+      message: error instanceof Error ? error.message : "Unknown Error",
+    };
+  }
+};
+
+// Get Delivery charge data
+// const getDeliveryCharge = async (ctx: Context) => {
+//   try {
+//     const { city, zipcode, totalAmount } = ctx.request.body as any;
+
+//     if (!city || !zipcode || totalAmount == null) {
+//       ctx.status = 400;
+//       ctx.body = {
+//         status: false,
+//         message: "City, Zipcode, and totalAmount are required",
+//       };
+//       return;
+//     }
+
+//     const deliveryChargeData: any = await DeliveryCharges.findOne({
+//       where: {
+//         city,
+//         zipcode,
+//         status: USERSTATUS.ACTIVE,
+//       },
+//     });
+
+//     const isFreeDelivery = totalAmount >= deliveryChargeData.minOrder;
+//     const deliveryCharge = isFreeDelivery ? 0 : deliveryChargeData.charge;
+
+//     const message = isFreeDelivery
+//       ? `Congratulations! You have free delivery for orders above ₹${deliveryChargeData.minOrder}`
+//       : `Add ₹${
+//           deliveryChargeData.minOrder - totalAmount
+//         } more to get free delivery`;
+
+//     ctx.status = 200;
+//     ctx.body = {
+//       status: true,
+//       deliveryCharge,
+//       isFreeDelivery,
+//       minOrderAmount: deliveryChargeData.minOrder,
+//       totalAmount,
+//       message,
+//     };
+//   } catch (error: any) {
+//     ctx.status = 500;
+//     ctx.body = {
+//       status: false,
+//       message: error.message || "Internal Server Error",
+//     };
+//   }
+// };
+const getDeliveryCharge = async (ctx: Context) => {
+  try {
+    const { Id, totalAmount } = ctx.request.body as {
+      Id: number;
+      totalAmount: number;
+    };
+
+    if (!Id || totalAmount == null) {
+      ctx.status = 400;
+      ctx.body = {
+        status: false,
+        message: "Id and totalAmount are required",
+      };
+      return;
+    }
+
+    const shippingMethod = await ShippingMethods.findOne({
+      where: {
+        id: Id,
+        status: USERSTATUS.ACTIVE,
+      },
+    });
+
+    if (!shippingMethod) {
+      ctx.status = 404;
+      ctx.body = {
+        status: false,
+        message: "Shipping method not found or inactive",
+      };
+      return;
+    }
+
+    const minOrder = shippingMethod.minOrder !== null ? Number(shippingMethod.minOrder) : 0;
+    const amount = shippingMethod.amount !== null ? Number(shippingMethod.amount) : 0;
+
+    let deliveryCharge = amount;
+    let isFreeDelivery = false;
+    let message = "";
+
+    if (minOrder > 0) {
+      isFreeDelivery = totalAmount >= minOrder;
+      deliveryCharge = isFreeDelivery ? 0 : amount;
+
+      message = isFreeDelivery
+        ? `Congratulations! You have free delivery for orders above ₹${minOrder}`
+        : `Add ₹${minOrder - totalAmount} more to get free delivery`;
+    } else {
+      message = `Delivery charge for this method is ₹${deliveryCharge}`;
+    }
+
+    ctx.status = 200;
+    ctx.body = {
+      status: true,
+      deliveryCharge,
+      isFreeDelivery,
+      minOrderAmount: minOrder,
+      totalAmount,
+      message,
+    };
+  } catch (error: any) {
+    ctx.status = 500;
+    ctx.body = {
+      status: false,
+      message: error.message || "Internal Server Error",
+    };
+  }
+};
+
+const razorpayWebhook = async (ctx: Context) => {
+  const body = ctx.request.body as any;
+  const razorpaySignature = ctx.request.headers["x-razorpay-signature"];
+  const rawBody = ctx.state.rawBody;
+
+  const expectedSignature = createHmac("sha256", process.env.RAZORPAY_SECRET!)
+    .update(rawBody)
+    .digest("hex");
+
+  if (razorpaySignature !== expectedSignature) {
+    ctx.status = 400;
+    ctx.body = { success: false, message: "Invalid signature" };
+    return;
+  }
+
+  const event = body.event;
+
+  if (event === "payment.captured") {
+    const payment = body.payload.payment.entity;
+    const amount = payment.amount / 100;
+
+    await Transaction.create({
+      orderId: "null",
+      paymentId: payment.id,
+      transationId: payment.id,
+      paymentMethod: "online",
+      status: PAYMEMENTSTATUS.SUCCESS,
+      amount: amount.toString(),
+    });
+  }
+  if (event === "payment.refunded") {
+    const payment = body.payload.payment.entity;
+
+    await Transaction.update(
+      { status: PAYMEMENTSTATUS.REFUNDED },
+      { where: { paymentId: payment.id } }
+    );
+
+    const transaction = await Transaction.findOne({
+      where: { paymentId: payment.id },
+    });
+    if (transaction?.orderId) {
+      await Orders.update(
+        { status: ORDERSTATUS.CANCELLED },
+        { where: { id: transaction.orderId } }
+      );
+    }
+
+    ctx.status = 200;
+    ctx.body = { success: true };
+  }
+
+  ctx.status = 200;
+  ctx.body = { success: true };
+};
+
+// Cancel order api
+const cancelOrder = async (ctx: Context) => {
+  try {
+    const { id } = ctx.params;
+
+    const order: any = await Orders.findOne({ where: { id } });
+
+    if (!order) {
+      ctx.status = 404;
+      ctx.body = { status: false, message: "Order not found" };
+      return;
+    }
+
+    if (order.status !== ORDERSTATUS.INPROGRESS) {
+      ctx.status = 400;
+      ctx.body = {
+        status: false,
+        message: "Order cannot be canceled in current status",
+      };
+      return;
+    }
+
+    const createdAt = moment(order.createdAt);
+    const now = moment();
+    const diffInHours = now.diff(createdAt, "hours");
+
+    let refundPercentage = 0;
+    let refundable = false;
+
+    if (diffInHours <= 24) {
+      refundPercentage = 0;
+      refundable = false;
+    } else if (diffInHours <= 48) {
+      refundPercentage = 60;
+      refundable = true;
+    } else {
+      refundPercentage = 100;
+      refundable = true;
+    }
+
+    if (!refundable) {
+      ctx.status = 400;
+      ctx.body = {
+        status: false,
+        message:
+          "Order cannot be canceled because it is within 24 hours and is non-refundable",
+      };
+      return;
+    }
+
+    const refundAmount = (Number(order.totalAmount) * refundPercentage) / 100;
+
+    // ✅ Update order to CANCELLED only if refundable
+    await Orders.update(
+      {
+        status: ORDERSTATUS.CANCELLED,
+      },
+      { where: { id } }
+    );
+
+    ctx.body = {
+      status: true,
+      message: "Order canceled successfully. Refund is available.",
+      data: {
+        refundable,
+        refundPercentage,
+        refundAmount,
+        refundStatus: "PENDING", // Refund yet to be processed
+      },
+    };
+  } catch (error) {
+    console.error(error);
+    ctx.status = 500;
+    ctx.body = { status: false, message: "Something went wrong" };
+  }
+};
+
+export = {
+  getAllOrder,
+  addOrder,
+  refundPayment,
+  verifyPayment,
+  getUsersOrder,
+  razorpayWebhook,
+  getDeliveryCharge,
+  cancelOrder,
+};

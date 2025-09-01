@@ -16,13 +16,13 @@ const userAuth = async (ctx: Context, next: Next) => {
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET as string, {
       ignoreExpiration: true,
     });
-    console.log("decode,,,,,", decoded);
+
     const UserData: any = await User.findOne({
       where: { id: decoded.id },
       attributes: ["id", "email", "name"],
       raw: true,
     });
-    console.log("user dattata.....", UserData);
+
     if (!UserData) {
       ctx.status = 403;
       ctx.body = { status: false, message: "User Not Found" };

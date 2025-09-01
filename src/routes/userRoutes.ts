@@ -5,7 +5,7 @@ const upload = require("../middleware/upload");
 const router = new Router({ prefix: "/users" });
 import userAuth from "../middleware/auth";
 
-//Gell All Users Data
+// Get All Users Data
 /**
  * @swagger
  * /users:
@@ -19,7 +19,7 @@ import userAuth from "../middleware/auth";
  */
 router.get("/", controller.getAllUser);
 
-//Get User Profile
+// Get User Profile
 /**
  * @swagger
  * /users/getprofile:
@@ -32,7 +32,7 @@ router.get("/", controller.getAllUser);
  */
 router.post("/getprofile", userAuth, controller.getUserProfile);
 
-//Update User Profile
+// Update User Profile
 /**
  * @swagger
  * /users/updateprofile:
@@ -58,5 +58,49 @@ router.post("/getprofile", userAuth, controller.getUserProfile);
  *         description: User updated
  */
 router.put("/updateprofile", userAuth, controller.updateUserProfile);
+
+// Gell All Customers Data
+/**
+ * @swagger
+ * /users/getcustomer:
+ *   get:
+ *     summary: Get all Customers
+ *     tags: [Users]
+ *     security: []
+ *     responses:
+ *       200:
+ *         description: List of Customers
+ */
+router.get("/getcustomer", controller.getAllCustomers);
+
+// Update User status
+/**
+ * @swagger
+ * /users/update-status:
+ *   put:
+ *     summary: Admin updates user status
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - userId
+ *               - status
+ *             properties:
+ *               userId:
+ *                 type: integer
+ *               status:
+ *                 type: string
+ *                 enum: [Active, Inactive]
+ *     responses:
+ *       200:
+ *         description: User status updated
+ */
+router.put("/update-status", userAuth, controller.updateUserStatus);
+
+
 
 export default router;

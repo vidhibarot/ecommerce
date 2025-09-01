@@ -1,5 +1,5 @@
 export default interface productUseAttribute {
-    id: number;
+    id?: number;
     title: string;
     description: string;
     productId: number;

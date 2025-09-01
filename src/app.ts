@@ -4,17 +4,49 @@ import cors from '@koa/cors';
 import { koaSwagger } from 'koa2-swagger-ui';
 import authRoutes from "./routes/auth";
 import userRoutes from "./routes/userRoutes";
-import productRoutes from "./routes/product"
-import categoryRoutes from "./routes/category"
+import productRoutes from "./routes/product";
+import categoryRoutes from "./routes/category";
+import countryRoutes from "./routes/country";
+import stateRoutes from "./routes/state";
+import cityRoutes from "./routes/city";
+import orderRoutes from "./routes/order";
+import cartItemsRoutes from "./routes/cartItems";
+import userPreferenceRoutes from "./routes/userPreference"
+import dashBoardRoutes from "./routes/dashboard"
+import storeRoutes from "./routes/store"
+import roleRoutes from "./routes/role"
+import paymentMethodsRoutes from "./routes/paymentMethod"
+import shippingMethodsRoutes from "./routes/shippingMethods"
+import taxMethodsRoutes from "./routes/taxMethods"
 import { db } from './models/index';
 import swaggerJSDoc from 'swagger-jsdoc';
 import path from 'path';
 import serve from 'koa-static';
 import mount from 'koa-mount';
+import rawBody from 'raw-body';
+
 
 const app = new Koa();
 
 app.use(cors({ origin: '*' })); 
+
+// Custom middleware for Razorpay webhook route
+app.use(async (ctx, next) => {
+  if (ctx.path === "/order/razorpay-webhook" && ctx.method.toLowerCase() === "post") {
+    try {
+      const raw = await rawBody(ctx.req);
+      ctx.request.body = JSON.parse(raw.toString());
+      ctx.state.rawBody = raw.toString(); // Save for signature verification
+    } catch (err) {
+      ctx.throw(400, "Invalid webhook body");
+    }
+  }
+
+  await next();
+});
+
+// app.use(bodyParser()); // Now apply body parser for all other routes
+
 
 app.use(bodyParser());
 app.use(mount('/uploads', serve(path.join(__dirname, 'uploads'))));
@@ -53,7 +85,18 @@ app.use(authRoutes.routes()).use(authRoutes.allowedMethods());
 app.use(userRoutes.routes()).use(userRoutes.allowedMethods());
 app.use(productRoutes.routes()).use(productRoutes.allowedMethods());
 app.use(categoryRoutes.routes()).use(categoryRoutes.allowedMethods());
-
+app.use(countryRoutes.routes()).use(countryRoutes.allowedMethods());
+app.use(cityRoutes.routes()).use(cityRoutes.allowedMethods());
+app.use(stateRoutes.routes()).use(stateRoutes.allowedMethods());
+app.use(orderRoutes.routes()).use(orderRoutes.allowedMethods());
+app.use(cartItemsRoutes.routes()).use(cartItemsRoutes.allowedMethods());
+app.use(userPreferenceRoutes.routes()).use(userPreferenceRoutes.allowedMethods());
+app.use(dashBoardRoutes.routes()).use(dashBoardRoutes.allowedMethods());
+app.use(storeRoutes.routes()).use(stateRoutes.allowedMethods());
+app.use(roleRoutes.routes()).use(roleRoutes.allowedMethods());
+app.use(paymentMethodsRoutes.routes()).use(paymentMethodsRoutes.allowedMethods());
+app.use(shippingMethodsRoutes.routes()).use(shippingMethodsRoutes.allowedMethods());
+app.use(taxMethodsRoutes.routes()).use(taxMethodsRoutes.allowedMethods());
 
 const PORT = process.env.PORT || 5000;
 
